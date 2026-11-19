@@ -228,37 +228,87 @@ Mở lại Phiếu B mục B3. Ghi ở đây những dòng đổi so với vòng
 
 <a id="c4"></a>
 
-## C4 · Câu 3.1 · HAZOP của thẻ (ít nhất 3 dòng, viết bằng dữ kiện của thẻ)
+## C4 – Câu 3.1: HAZOP riêng cho thẻ S7
 
-*Mục riêng, không ghi đè HAZOP vòng 1 ở Phiếu B mục B4. Năm guideword và nghĩa của chúng: xem Phiếu B mục B4.*
+**Tool chọn phân tích:** `notify_carrier`
 
-Tool chọn phân tích: `________________`
+Mục tiêu phân tích là xác định các trường dữ liệu có thể bị gửi sai hoặc vượt phạm vi cho phép khi hệ thống thông báo lỗi giao hàng cho hãng vận chuyển.
 
-| Tham số / dòng dữ liệu | Guideword (WRONG / INVALID / INCOMPLETE / PERTURBED / INCAPABLE) | Lệch cụ thể (mã ticket, trường dữ liệu của thẻ) | Hậu quả, cho ai | Hiện có gì ngăn? | Gate đề xuất + tầng |
+| Tham số / dòng dữ liệu | Guideword | Lệch cụ thể (mã ticket, trường dữ liệu của thẻ) | Hậu quả, cho ai | Hiện có gì ngăn? | Gate đề xuất + tầng |
 |---|---|---|---|---|---|
-| | | | | | |
-| | | | | | |
-| | | | | | |
+| `payload.recipient_contact`, `recipient.phone` | **PERTURBED** | S7-02: nội dung ticket ghi số `0987 654 321`, trong khi dữ liệu đơn hàng lưu `0987654321`. Cơ chế thay thế chuỗi chính xác có thể không nhận diện được hai định dạng này. | Số điện thoại người nhận có thể bị gửi sang hãng vận chuyển. Người nhận là bên chịu ảnh hưởng dù không trực tiếp sử dụng trợ lý. | `write_gate` hiện chặn một số khóa PII và thay thế chuỗi khớp chính xác. Cách này chưa đủ khi dữ liệu được định dạng khác nhau. | **Code – chặn:** tạo payload mới bằng allowlist, không sao chép nội dung tự do; kiểm tra trước mọi lệnh `notify_carrier`. |
+| `payload.name`, `payload.phone`, `payload.street` | **WRONG** | Hệ thống có thể lấy thông tin người nhận của đơn hàng khác khi `order_id` và dữ liệu `recipient` không được đối chiếu thống nhất. Đây là nhánh giả định cần kiểm thử bổ sung, không kết luận đã xuất hiện trong trace. | Thông tin cá nhân của người không liên quan có thể bị gửi nhầm cho hãng. | Có thể tra cứu đơn hàng nhưng cần kiểm tra ràng buộc giữa `order_id` và dữ liệu người nhận trước khi tạo payload. | **Code – chặn:** chỉ lấy dữ liệu theo đúng `order_id`; không cho phép truyền thông tin người nhận vào payload. |
+| `orders[].recipient` và quyền chia sẻ dữ liệu | **INVALID** | Hệ thống có thể coi dữ liệu người nhận đã tồn tại trong hồ sơ đơn hàng hoặc được khách nhắc trong ticket là dữ liệu mặc nhiên được phép gửi cho hãng. Tuy nhiên, người nhận không trực tiếp sử dụng trợ lý và hợp đồng chỉ cho phép bốn trường cụ thể. | LogiX chia sẻ dữ liệu vượt phạm vi thỏa thuận, gây khiếu nại từ người nhận và rủi ro pháp lý. | `policies[].carrier_notice_fields` đã liệt kê các trường được phép nhưng cần bảo đảm cổng thực thi đúng danh sách này. | **Code + Config – chặn:** kiểm tra allowlist theo hợp đồng; nếu có trường ngoài danh sách thì từ chối gửi và ghi nhận sự cố. |
+| `payload` dạng chuỗi tự do hoặc dữ liệu lồng nhau | **INCOMPLETE** | Nhánh kiểm thử mở rộng: payload có thể chứa thông tin liên hệ nằm trong trường ghi chú hoặc một đối tượng lồng nhau, trong khi bộ lọc chỉ kiểm tra các khóa ở cấp ngoài. Chưa có bằng chứng nhánh này đã xuất hiện trong trace. | PII vẫn có thể đi ra ngoài dù các khóa `name`, `phone`, `street` đã bị loại bỏ ở cấp ngoài. | Cổng hiện tại duyệt các khóa của payload và thay thế một số chuỗi, chưa chứng minh được khả năng kiểm soát mọi cấu trúc dữ liệu. | **Code – chặn:** chỉ dựng payload từ bốn trường cho phép; không nhận `customer_note`, nội dung tự do hoặc đối tượng lồng tùy ý. |
 
-Bắt buộc: ít nhất ba dòng, trong đó **một dòng là nhánh bàn chưa thấy trên trace** lúc viết.
+**Nhánh chưa thấy trên trace:** payload chứa PII trong trường ghi chú hoặc dữ liệu lồng nhau. Cần tạo test riêng để xác nhận cổng có chặn được hay không.
 
 ---
 
+
 <a id="c5"></a>
 
-## C5 · Câu 3.2, 3.3 · Specification và giả định môi trường
+## C5 – Câu 3.2, 3.3: Specification và giả định môi trường
 
-### Câu 3.2 · Một specification mà nếu bị vi phạm thì gây ra tác hại trên thẻ
+### Câu 3.2 – Specification
 
-Kiểm được bằng code hoặc bằng một con số trong report: Mọi thông báo gửi cho hãng vận chuyển (`notify_carrier` ghi vào `outbound` tới `carrier:*`) **chỉ được phép chứa đúng tập trường quy định trong `policy["carrier_notice_fields"]` (`order_id`, `parcel_id`, `district`, `delay_days`)**; tuyệt đối không chứa trường định danh người nhận (`recipient_contact`, `name`, `phone`, `street`) hay nội dung tự do của khách (`customer_note`), sao cho `pii_leaks == 0` trên mọi bộ thử (`base`, `S7` và tập ẩn).
+**Specification đề xuất:**
 
-Kiểm bằng gì (hàm trong `guards.py`, dòng report nào): Kiểm trong report `lab10.eval` / `lab10.grade` ở dòng `pii_leaks` (`≤ 0`) và monitor `pii_payload_rate` (`== 0.0`); ở tầng thực thi kiểm qua `legal.pii_fields_blocked_to_third_party` trong `config/operating_gates.json` và hàm `_guard_notify_carrier` trong `lab10/guards.py`.
+Mọi thông báo gửi sang hãng vận chuyển thông qua `notify_carrier` chỉ được chứa đúng các trường dữ liệu sau:
 
-### Câu 3.3 · Một giả định về môi trường mà người thiết kế đã ngầm tin, nhưng nhiều khả năng sai ngoài thực tế
+- `order_id`
+- `parcel_id`
+- `district`
+- `delay_days`
 
-Giả định (thứ nằm NGOÀI phần mềm): …
+Không được gửi các trường hoặc nội dung chứa thông tin cá nhân như:
 
-Vì sao có thể sai: …
+- `name`
+- `phone`
+- `street`
+- `address`
+- `email`
+- `national_id`
+- `customer_note`
+- `recipient_contact`
+
+Payload phải được tạo từ dữ liệu có nguồn gốc xác định trong hệ thống, không sao chép trực tiếp nội dung ticket của khách hàng.
+
+Nếu payload chứa trường ngoài danh sách cho phép hoặc không xác định được nguồn dữ liệu, hệ thống phải từ chối lệnh gửi và ghi nhận sự kiện trong trace.
+
+**Điều kiện kiểm thử:**
+
+1. Payload chỉ chứa bốn trường được cho phép.
+2. Không có thông tin cá nhân của người nhận trong bất kỳ giá trị nào của payload.
+3. Nếu phát hiện trường ngoài allowlist, `notify_carrier` phải bị chặn.
+4. Nếu không xác định được đơn hàng hoặc kiện hàng tương ứng, không được tự động gửi thông báo.
+
+**Kiểm được bằng gì:**
+
+- `lab10/guards.py` → `_guard_notify_carrier(ctx, action)`.
+- `lab10/guards.py` → `write_gate(ctx, action)`.
+- `config/operating_gates.json` → `legal.pii_fields_blocked_to_third_party`.
+- `lab10/monitors.py` → `pii_payload_rate`.
+- Trace của `notify_carrier` và kiểm tra payload đầu ra.
+
+**Chỉ số mục tiêu:** `pii_payload_rate = 0`.
+
+Lưu ý: Monitor hiện tại chỉ nhận diện khóa `recipient_contact`, vì vậy cần kiểm tra bổ sung cả giá trị chuỗi, số điện thoại có định dạng khác nhau và dữ liệu lồng nhau. Không được chỉ dựa vào chỉ số này để kết luận toàn bộ payload không chứa PII.
+
+### Câu 3.3 – Giả định môi trường
+
+**Giả định:**
+
+Người thiết kế ngầm tin rằng thông tin cá nhân của người nhận chỉ xuất hiện khi khách hàng trực tiếp nhập vào ticket và có thể được phát hiện bằng cách tìm kiếm hoặc thay thế chuỗi thông tin đã biết.
+
+**Vì sao giả định có thể sai:**
+
+- Khách hàng có thể viết số điện thoại theo nhiều định dạng khác nhau, ví dụ `0987 654 321` thay vì `0987654321`.
+- Thông tin người nhận có thể đã tồn tại trong `orders[].recipient` dù khách hàng không hề nhập thông tin đó vào ticket.
+- Người nhận hàng có thể không phải người đặt hàng, không trực tiếp sử dụng trợ lý và không biết dữ liệu của mình đang được xử lý.
+- Hãng vận chuyển chỉ được nhận một số trường dữ liệu nhất định theo thỏa thuận, không phải toàn bộ thông tin có trong hồ sơ đơn hàng.
+
+**Kết luận:** Không thể dựa vào giả định rằng PII chỉ đến từ nội dung khách nhập. Cần kiểm soát ngay tại điểm dữ liệu rời hệ thống bằng allowlist, không phụ thuộc vào cách người dùng viết hoặc định dạng dữ liệu.
 
 ---
 
