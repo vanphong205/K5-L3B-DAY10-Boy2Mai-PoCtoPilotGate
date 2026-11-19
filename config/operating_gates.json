@@ -7,18 +7,33 @@
     "roi_min": null
   },
   "operations": {
-    "pic": "",
-    "approver_id": "",
-    "reviewers_on_shift": 1,
-    "review_capacity_per_hour": null,
-    "max_queue_wait_minutes": null,
-    "stop_conditions": [],
-    "alert_channel": "",
-    "decision_note": false,
-    "review_sampling_pct": 0
+    "pic": "NV-TUNG",
+    "approver_id": "NV-HANH",
+    "reviewers_on_shift": 2,
+    "review_capacity_per_hour": 12,
+    "max_queue_wait_minutes": 60,
+    "stop_conditions": [
+      "Khi có 1 khoản hoàn sai thì tắt issue_refund",
+      "Khi có 1 lỗi ghi oan cho hãng thì tắt file_carrier_fault",
+      "Khi có 1 lần lộ dữ liệu cá nhân cho bên thứ ba thì tắt notify_carrier",
+      "Khi có 1 ca bị ùn (chờ quá SLA 60 phút hoặc hết ca chưa tới lượt) thì thu hẹp pilot và gọi thêm người duyệt",
+      "Khi hai sự kiện vàng liên tiếp hoặc một điều kiện dừng xảy ra hai lần thì báo PIC và dừng toàn bộ pilot"
+    ],
+    "alert_channel": "Ops-Oncall-CSKH",
+    "decision_note": true,
+    "review_sampling_pct": 10
   },
   "legal": {
-    "pii_fields_blocked_to_third_party": [],
-    "carrier_fault_requires_recorded_cause": false
+    "pii_fields_blocked_to_third_party": [
+      "recipient_contact",
+      "customer_note",
+      "name",
+      "phone",
+      "street",
+      "address",
+      "email",
+      "national_id"
+    ],
+    "carrier_fault_requires_recorded_cause": true
   }
 }
