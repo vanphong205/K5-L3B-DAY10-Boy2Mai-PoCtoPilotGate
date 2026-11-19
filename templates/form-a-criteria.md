@@ -24,8 +24,8 @@ rồi mới chạy đánh giá. Khối 1 không sửa code.
 
 ### Câu 1.2 · Mục tiêu nhìn từ hai người
 
-- Chị Oanh, kế toán đối soát (không dùng trợ lý, nhưng phải khớp sổ với hãng và shop mỗi tuần): …
-- Chị Hạnh, trưởng ca CSKH (phải duyệt những ca trợ lý chuyển sang): …
+- Chị Oanh, kế toán đối soát (không dùng trợ lý, nhưng phải khớp sổ với hãng và shop mỗi tuần): có sổ hoàn và sổ lỗi hãng đủ mã đơn, hãng, kiện và căn cứ tracking; cuối tuần đối soát khớp với hãng/shop, mọi sai lệch truy được về người duyệt và hồ sơ liên quan.
+- Chị Hạnh, trưởng ca CSKH (phải duyệt những ca trợ lý chuyển sang): nhận đúng ca cần duyệt, có lý do và căn cứ trong ghi chú quyết định; hàng chờ được xử lý trong SLA 60 phút với năng lực trực đã công bố, không phải duyệt lại từ đầu vì thiếu thông tin.
 
 ---
 
