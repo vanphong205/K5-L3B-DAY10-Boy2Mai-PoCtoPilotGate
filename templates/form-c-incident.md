@@ -176,25 +176,26 @@ nay họ làm việc này **từng bước ra sao**, đồng đều hay mỗi n�
 
 → Mỗi chỗ vênh là một nhánh của fault tree. Gate tốt làm cho hệ thống hành xử theo hình dung của người chịu hậu quả.
 
-### C3.3 · Hiệu chỉnh lòng tin · người đặt hàng và người nhận hàng (S7)
+## C3.3 – Câu 3.1: Hiệu chỉnh lòng tin của người đặt hàng và người nhận hàng
 
-**Cách làm:** đặt ba mốc trên một trục: **không tin · tin vừa đủ · tin quá mức**. Với từng nhóm người, nghĩ ra
-một tình huống đẩy họ về mỗi mốc, rồi ghi hai thứ làm lòng tin lệch: **dữ liệu của hệ thống** có liên quan, và **điều người đó
-biết hay không biết**. Mục tiêu là lòng tin khớp với việc hệ thống thực sự làm. Người nhận hàng không dùng hệ thống, không ký gì với LogiX.
-Chỉ cần hai mốc có trong thẻ; mốc còn lại để trống nếu không có bằng chứng.
+Mục tiêu là đưa lòng tin của người đặt hàng và người nhận hàng về mức phù hợp với cách trợ lý thực sự xử lý dữ liệu. Người đặt hàng là người trực tiếp sử dụng trợ lý, còn người nhận hàng không trực tiếp sử dụng hệ thống và không ký thỏa thuận với LogiX.
 
-| Mốc | Nhóm | Tình huống cụ thể (lấy từ thẻ / ticket) | Dữ liệu của hệ thống liên quan (trường nào, đi tới đâu) | Điều người đó biết / không biết |
+| Mốc | Nhóm | Tình huống cụ thể | Dữ liệu của hệ thống liên quan (trường nào, đi tới đâu) | Điều người đó biết / không biết |
 |---|---|---|---|---|
-| **Tin quá mức** | người đặt hàng | | | |
-| **Tin quá mức** | người nhận hàng | | | |
-| **Không tin** (sau sự cố) | người nhận hàng | | | |
-| **Tin vừa đủ** (trạng thái muốn tới) | cả hai | | | |
+| **Tin quá mức** | Người đặt hàng | Khách gửi ticket yêu cầu hỗ trợ đơn hàng hoặc hoàn phí vận chuyển, trong đó có thể nhắc đến thông tin người nhận. Khách tin rằng trợ lý chỉ sử dụng nội dung để xử lý yêu cầu nội bộ. | Nội dung `ticket.text`, thông tin `orders[].recipient.name`, `phone`, `street`; dữ liệu có nguy cơ được đưa vào payload của `notify_carrier`. | Khách biết mình đã cung cấp thông tin trong ticket nhưng không nhất thiết biết những thông tin đó có thể được gửi sang hãng vận chuyển. |
+| **Tin quá mức** | Người nhận hàng | Không có bằng chứng cho thấy người nhận hàng từng trực tiếp tin tưởng hoặc sử dụng trợ lý. Người nhận không phải người dùng của hệ thống nên không thể kết luận họ đã tin quá mức. | Hồ sơ `orders[].recipient` chứa họ tên, số điện thoại, địa chỉ; dữ liệu có thể đi tới hãng vận chuyển thông qua `notify_carrier`. | Người nhận không biết dữ liệu của mình được hệ thống xử lý và có thể bị chia sẻ cho bên thứ ba ngoài phạm vi cần thiết. |
+| **Không tin (sau sự cố)** | Người nhận hàng | Người nhận phản ánh bị nhân viên hãng vận chuyển gọi điện xin lỗi vì giao trễ và đọc đúng tên, địa chỉ nhà. Người này cho biết chưa từng cung cấp số điện thoại cho hãng. | Các trường `recipient.name`, `recipient.phone`, `recipient.street` trong `orders`; payload của `notify_carrier`. | Người nhận biết thông tin cá nhân đã bị sử dụng ngoài dự kiến và không còn tin tưởng LogiX trong việc bảo vệ dữ liệu. |
+| **Tin vừa đủ (trạng thái muốn tới)** | Cả hai | Người đặt hàng nhận được kết quả xử lý có giải thích rõ ràng. Người nhận hàng được bảo vệ vì hệ thống chỉ gửi thông tin thực sự được phép chia sẻ cho hãng. | Chỉ gửi `order_id`, `parcel_id`, `district`, `delay_days`; không gửi thông tin liên hệ hoặc nội dung tự do chứa PII. | Người đặt hàng hiểu cách trợ lý xử lý yêu cầu. Người nhận hàng có thể yên tâm rằng dữ liệu cá nhân không bị chuyển sang hãng ngoài phạm vi cho phép. |
 
-**Rút ra:**
-- Dữ liệu nào rời hệ thống mà người liên quan **không biết** là nó rời đi: `__________` → tới `__________`.
-- Để lòng tin khớp thực tế, có hai đường: **giải thích** cho người dùng dữ liệu đi đâu, hoặc **làm cho hệ thống chỉ làm đúng
-  điều người ta tưởng**. Với người nhận hàng (không có kênh nào để giải thích), đường khả thi là: `__________`.
-- Biện pháp đó là giảm khả năng lộ hay bảo đảm không lộ: `__________`.
+### Rút ra
+
+- **Dữ liệu rời hệ thống mà người liên quan không biết:** `recipient.name`, `recipient.phone`, `recipient.street` và các thông tin cá nhân được trích xuất từ `ticket.text` hoặc `orders[].recipient` → payload của tool `notify_carrier` → hãng vận chuyển.
+- **Đường khả thi để tạo lòng tin cho người nhận hàng:** không phụ thuộc vào việc giải thích cho người nhận, mà phải thiết kế hệ thống chỉ gửi những trường dữ liệu được hợp đồng cho phép. Người nhận không có kênh trực tiếp để kiểm soát việc trợ lý gửi dữ liệu.
+- **Biện pháp:** sử dụng allowlist ở tầng code để tạo payload mới chỉ gồm các trường được phép, thay vì chỉ tìm và xóa những trường PII đã biết.
+
+**Kết luận:** Cổng allowlist có thể ngăn việc gửi các trường không được phép qua `notify_carrier` nếu mọi thông báo đều đi qua cổng này. Tuy nhiên, nó không bảo đảm dữ liệu không bị lộ qua những kênh khác hoặc do bên nhận dữ liệu tiếp tục sử dụng sai mục đích.
+
+---
 
 ### C3.4 · Hiệu chỉnh lòng tin · nhân viên duyệt và trưởng ca đứng tên (S8)
 
