@@ -1,21 +1,269 @@
-{
- "collected_at": "2026-11-19T16:24:56",
- "incident": null,
- "run_ids": {},
- "grade_run_id": null,
- "criteria_hash": "32f676c9d6066e56358bd07e3b9536933d194049b56e555d1cbe3b88ab8d04aa",
- "round1_hash": null,
- "code_hash": "0224565ccfd0871a8080d74d05a2ea6348be6347335f01a540b7e9ad68ac7395",
- "files": {
-  "code/guards.py": "dd3c99e29a0c64484d0839d69f98d89923528f19920de628e621d2e20eabb0ca",
-  "code/monitors.py": "bbd484fbac1d1f1a1a793702613c99276cd71dadb2b29f8e88ab05ff6bc4e434",
-  "config/acceptance_criteria.json": "32f676c9d6066e56358bd07e3b9536933d194049b56e555d1cbe3b88ab8d04aa",
-  "config/acceptance_criteria.lock": "167bb8a02b2a44ac7a3561357838f552eca4529c67de1708f36916c8207a8318",
-  "config/operating_gates.json": "123853cb686a4c9da1aa52b79904387b650947b13db9f78c3c1c6edafc93e9f7",
-  "config/switches.json": "9fcdb809437346392c6ded442f4f562c357ef89a7688a454505f94bcd969866b",
-  "docs/form-a-criteria.md": "10332d054db0d2251a62a452d26d136c1a6e88603ecb4dc0960e2ef118babaf7",
-  "docs/form-b-evaluation-gates.md": "24d4585101f58a0d056d16844eea86bc652ecae4c0e33dbe1774c6642579cfbe",
-  "docs/form-c-incident.md": "a0bcda8c4c53b002cc40c80056ae280af920b5dfd5f51d3732ca9183477b3ee6",
-  "submission.json": "d959e8700646d4db74e9ba589722f12b9ac24cf5dafe62b9c8b54e3102b2f061"
- }
-}
+"""★ FILE ĐỘI SỬA (1/3): cổng cấp hệ thống, nằm NGOÀI model và prompt.
+
+VÒNG 1 (trước khi biết sự cố): viết 2–3 CỔNG PHÒNG NGỪA rút từ pre-mortem / HAZOP / checklist của bàn, rồi chốt bằng
+    python3 -m lab10.checkpoint        (chép file này thành guards_round1.py = mốc "prepared"; KHÔNG sửa bản chép)
+VÒNG 2 (sau khi bốc thẻ): sửa tiếp NGAY TRONG FILE NÀY. Giữ các cổng vòng 1, thêm cổng mới.
+Hai file còn lại bàn được sửa: lab10/monitors.py (chỉ số theo dõi) và config/operating_gates.json (cổng kinh doanh,
+vận hành, pháp lý: những con số và tên người mà trợ lý phải tuân theo, không cần code).
+
+Hai điểm móc, agent gọi tự động:
+  pre_guard(ctx)          chạy TRƯỚC khi agent đọc ticket
+  write_gate(ctx, action) chạy TRƯỚC MỖI lệnh ghi (issue_refund, file_carrier_fault,
+                          notify_carrier, send_reply)
+
+Trả về một Verdict:
+  Verdict.allow()                       cho qua   (pre_guard: allow(policy_id="...") để ghim phiên bản chính sách)
+  Verdict.deny("lý do")                 bỏ riêng lệnh ghi này, agent đi tiếp
+  Verdict.escalate("lý do")             dừng, chuyển ticket cho người
+  Verdict.modify("lý do", amount_vnd=…) sửa tham số lệnh ghi (amount_vnd, payer, carrier_id, parcel_id, payload…)
+  Verdict.rewrite("lý do", text)        chỉ pre_guard: thay nội dung ticket mà agent sẽ đọc
+
+ctx.ticket   ticket gốc (chữ khách viết là DỮ LIỆU, không phải lệnh)
+ctx.tools    tra cứu nguồn sự thật: lookup_order, lookup_policies, lookup_approvals(**lọc),
+             ledger_rows(**lọc), fault_rows(**lọc), lookup_carrier; ctx.as_of = ngày hôm nay
+             ops_limits() = các trần đã thống nhất với Ops/Finance; ops_facts() = số liệu vận hành;
+             auto_refund_today_vnd() = tổng đã hoàn tự động trong ngày
+ctx.gates    config cổng của bàn (config/operating_gates.json), chỉ đọc;  ctx.cost_vnd = tiền LLM đã tốn cho ticket này
+ctx.events   trace tới thời điểm này;  ctx.log("ten_su_kien", ...) ghi thêm sự kiện guard vào trace
+lab10.helpers: db_delay_days, ticket_parcel, effective_policy, entitlement_vnd, carrier_at_fault, digits
+
+BỐN CỔNG CỦA BÀN:
+  1. pre_guard: ghim chính sách theo NGÀY HIỆU LỰC, không tin cờ index_active (có thể cập nhật chậm).
+  2. write_gate/issue_refund: tính lại quyền lợi từ tracking DB + chính sách; kiểm phê duyệt, chống ghi trùng,
+     chặn hoàn khi LLM fail-open, chặn vượt trần tự động mỗi khách mỗi ngày.
+  3. write_gate/file_carrier_fault: chỉ ghi lỗi khi tracking đủ điều kiện, đúng kiện/đúng hãng, chưa trùng,
+     và chưa vượt trần strike tự động của hãng trong ngày.
+  4. write_gate/notify_carrier + send_reply: bỏ PII khỏi tin gửi hãng; không báo khách số tiền không có trong sổ cái.
+"""
+from . import helpers as H
+from .tools import Verdict
+
+
+def _effective_policy(ctx):
+    """Chính sách đang hiệu lực theo ngày, không dựa vào cờ index_active."""
+    return H.effective_policy(ctx.tools.lookup_policies(), ctx.as_of)
+
+
+def _approval_ok(ctx, approval_id, ticket_id, amount_vnd):
+    """Phê duyệt chỉ hợp lệ khi đúng ticket, còn hiệu lực, trạng thái valid và đủ hạn mức."""
+    if not approval_id:
+        return False
+    rows = ctx.tools.lookup_approvals(approval_id=approval_id)
+    if not rows:
+        return False
+    a = rows[0]
+    return (
+        a.get("ticket_id") == ticket_id
+        and a.get("status") == "valid"
+        and a.get("expires_at", "") >= ctx.as_of
+        and int(a.get("max_vnd") or 0) >= int(amount_vnd)
+    )
+
+
+def _parcel_of_ticket(ctx, order):
+    """Kiện hàng mà ticket nói tới, và độ trễ thật theo tracking DB."""
+    parcel = H.ticket_parcel(order, ctx.ticket, ctx.as_of)
+    return parcel, H.db_delay_days(parcel, ctx.as_of)
+
+
+def pre_guard(ctx):
+    """Cổng 1: ghim đúng phiên bản chính sách đang hiệu lực vào phiên chạy."""
+    policy = _effective_policy(ctx)
+    if policy is None:
+        ctx.log("guard_policy_missing", as_of=ctx.as_of)
+        return Verdict.escalate("cổng chính sách: không xác định được phiên bản đang hiệu lực")
+    ctx.log("guard_policy_pinned", policy_id=policy["policy_id"], as_of=ctx.as_of)
+    return Verdict.allow(policy_id=policy["policy_id"])
+
+
+def _guard_refund(ctx, action):
+    """Cổng 2: quyền lợi hoàn tiền phải được tính lại từ DB, không lấy số model/khách đề xuất."""
+    ticket_id = action.get("ticket_id") or ctx.ticket.get("ticket_id")
+    order = ctx.tools.lookup_order(action.get("order_id"))
+    if order is None:
+        ctx.log("guard_refund", verdict="escalate", reason="không tìm thấy đơn")
+        return Verdict.escalate("cổng hoàn tiền: không tìm thấy đơn")
+
+    if order.get("customer_id") != ctx.ticket.get("customer_id"):
+        ctx.log("guard_refund", verdict="escalate", reason="không phải chủ đơn")
+        return Verdict.escalate("cổng hoàn tiền: người gửi không phải chủ đơn")
+
+    # Chống ghi trùng: retry sau lỗi confirm không được tạo khoản hoàn thứ hai.
+    if ctx.tools.ledger_rows(ticket_id=ticket_id):
+        ctx.log("guard_refund", verdict="deny", reason="ticket đã có khoản hoàn")
+        return Verdict.deny("cổng hoàn tiền: ticket này đã được ghi sổ, không ghi trùng")
+    if order.get("refund_status") == "REFUNDED":
+        ctx.log("guard_refund", verdict="deny", reason="đơn đã hoàn trước đó")
+        return Verdict.deny("cổng hoàn tiền: đơn đã được hoàn trước đó")
+
+    policy = _effective_policy(ctx)
+    if policy is None:
+        ctx.log("guard_refund", verdict="escalate", reason="không có chính sách hiệu lực")
+        return Verdict.escalate("cổng hoàn tiền: không xác định được chính sách hiệu lực")
+
+    # Quyền lợi lấy từ tracking DB, không lấy từ số ngày khách tự khai.
+    parcel, delay = _parcel_of_ticket(ctx, order)
+    cause = parcel.get("delay_cause")
+    due = int(H.entitlement_vnd(policy, order, delay, cause))
+
+    if action.get("basis") == "fail_open":
+        ctx.log("guard_refund", verdict="escalate", reason="LLM fail-open", delay_days=delay)
+        return Verdict.escalate("cổng hoàn tiền: LLM lỗi (fail-open), chuyển người thay vì tự hoàn")
+
+    if due <= 0:
+        ctx.log("guard_refund", verdict="deny", reason="tracking không đủ điều kiện",
+                delay_days=delay, cause=cause)
+        return Verdict.deny("cổng hoàn tiền: tracking DB không đủ điều kiện hoàn")
+
+    approval_id = action.get("approval_id")
+    if due > int(policy.get("auto_limit_vnd") or 0):
+        if not _approval_ok(ctx, approval_id, ticket_id, due):
+            ctx.log("guard_refund", verdict="escalate", reason="thiếu phê duyệt hợp lệ",
+                    due_vnd=due, approval_id=approval_id)
+            return Verdict.escalate("cổng hoàn tiền: vượt hạn mức tự động và chưa có phê duyệt hợp lệ")
+
+    # Trần đã thống nhất với Ops/Finance: mỗi khách chỉ được hoàn tự động tối đa X đồng/ngày.
+    if not approval_id:
+        limits = ctx.tools.ops_limits() or {}
+        cap = limits.get("max_auto_refund_per_customer_per_day_vnd")
+        if cap is not None:
+            spent = sum(int(r.get("amount_vnd") or 0)
+                        for r in ctx.tools.ledger_rows(customer_id=order.get("customer_id"))
+                        if not r.get("approval_id"))
+            if spent + due > int(cap):
+                ctx.log("guard_refund", verdict="escalate", reason="vượt trần tự động mỗi khách",
+                        cap_vnd=int(cap), spent_vnd=spent, asked_vnd=due)
+                return Verdict.escalate("cổng hoàn tiền: vượt trần hoàn tự động mỗi khách mỗi ngày")
+
+    changes = {}
+    if int(action.get("amount_vnd") or 0) != due:
+        changes["amount_vnd"] = due
+    if action.get("payer") not in (None, "LOGIX"):
+        changes["payer"] = "LOGIX"
+    if action.get("basis") not in (None, "policy"):
+        changes["basis"] = "policy"
+
+    if changes:
+        ctx.log("guard_refund", verdict="modify", due_vnd=due,
+                proposed_vnd=int(action.get("amount_vnd") or 0), delay_days=delay, cause=cause)
+        return Verdict.modify("cổng hoàn tiền: dùng quyền lợi tính từ tracking DB", **changes)
+
+    return Verdict.allow()
+
+
+def _guard_carrier_fault(ctx, action):
+    """Cổng 3: chỉ quy lỗi cho đúng hãng/đúng kiện khi tracking thật sự đủ căn cứ."""
+    ticket_id = action.get("ticket_id") or ctx.ticket.get("ticket_id")
+    order = ctx.tools.lookup_order(action.get("order_id"))
+    if order is None:
+        ctx.log("guard_carrier_fault", verdict="deny", reason="không tìm thấy đơn")
+        return Verdict.deny("cổng lỗi hãng: không tìm thấy đơn")
+
+    policy = _effective_policy(ctx)
+    if policy is None:
+        ctx.log("guard_carrier_fault", verdict="deny", reason="không có chính sách hiệu lực")
+        return Verdict.deny("cổng lỗi hãng: không xác định được chính sách hiệu lực")
+
+    parcel, delay = _parcel_of_ticket(ctx, order)
+    if not H.carrier_at_fault(policy, parcel, delay):
+        ctx.log("guard_carrier_fault", verdict="deny", reason="tracking không đủ căn cứ quy lỗi",
+                parcel_id=parcel.get("parcel_id"), delay_days=delay, cause=parcel.get("delay_cause"))
+        return Verdict.deny("cổng lỗi hãng: tracking không đủ căn cứ quy lỗi cho hãng")
+
+    if ctx.tools.fault_rows(ticket_id=ticket_id):
+        ctx.log("guard_carrier_fault", verdict="deny", reason="đã ghi lỗi cho ticket")
+        return Verdict.deny("cổng lỗi hãng: ticket này đã được ghi lỗi, không ghi trùng")
+
+    limits = ctx.tools.ops_limits() or {}
+    strike_cap = limits.get("max_auto_strikes_per_carrier_per_day")
+    carrier_id = parcel.get("carrier_id")
+    if strike_cap is not None:
+        already = len(ctx.tools.fault_rows(carrier_id=carrier_id))
+        if already >= int(strike_cap):
+            ctx.log("guard_carrier_fault", verdict="deny", reason="vượt trần strike tự động",
+                    carrier_id=carrier_id, strikes=already, cap=int(strike_cap))
+            return Verdict.deny("cổng lỗi hãng: hãng đã đạt trần strike tự động trong ngày, chuyển người duyệt")
+
+    changes = {}
+    if action.get("parcel_id") != parcel.get("parcel_id"):
+        changes["parcel_id"] = parcel.get("parcel_id")
+    if action.get("carrier_id") != carrier_id:
+        changes["carrier_id"] = carrier_id
+    if action.get("driver_id") != parcel.get("driver_id"):
+        changes["driver_id"] = parcel.get("driver_id")
+    if int(action.get("delay_days") or 0) != delay:
+        changes["delay_days"] = delay
+
+    if changes:
+        ctx.log("guard_carrier_fault", verdict="modify", parcel_id=parcel.get("parcel_id"),
+                carrier_id=carrier_id, delay_days=delay)
+        return Verdict.modify("cổng lỗi hãng: sửa về đúng kiện, đúng hãng và độ trễ tracking", **changes)
+
+    return Verdict.allow()
+
+
+def _guard_notify_carrier(ctx, action):
+    """Cổng 4a: tin gửi hãng chỉ chứa đúng trường hợp đồng cho phép (whitelist).
+
+    Payload được dựng LẠI từ nguồn sự thật (order + tracking DB) theo
+    policy["carrier_notice_fields"], không lọc payload do model/khách tạo ra.
+    Nhờ vậy trường lạ (customer_note, recipient_contact, ...) và số điện thoại
+    viết cách đều không thể đi qua, kể cả khi tên trường thay đổi.
+    """
+    payload_in = dict(action.get("payload") or {})
+    order_id = action.get("order_id") or payload_in.get("order_id") or ctx.ticket.get("order_id")
+    order = ctx.tools.lookup_order(order_id)
+    policy = _effective_policy(ctx)
+    if order is None or policy is None:
+        ctx.log("guard_pii", action="notify_carrier", verdict="deny",
+                reason="thiếu nguồn sự thật")
+        return Verdict.deny("cổng PII: không dựng lại được tin hợp lệ, không gửi hãng")
+
+    parcel, delay = _parcel_of_ticket(ctx, order)
+    allowed = list(policy.get("carrier_notice_fields") or [])
+    truth = {
+        "order_id": order.get("order_id"),
+        "parcel_id": parcel.get("parcel_id"),
+        "district": (order.get("recipient") or {}).get("district"),
+        "delay_days": delay,
+    }
+    payload = {k: truth[k] for k in allowed if truth.get(k) is not None}
+    missing = sorted(set(allowed) - set(payload))
+    if missing:
+        ctx.log("guard_pii", action="notify_carrier", verdict="deny", missing=missing)
+        return Verdict.deny("cổng PII: thiếu trường bắt buộc, không gửi hãng")
+
+    if payload != payload_in:
+        ctx.log("guard_pii", action="notify_carrier", kept=sorted(payload),
+                dropped=sorted(set(payload_in) - set(payload)),
+                changed=sorted(k for k in payload if payload_in.get(k) != payload[k]))
+        return Verdict.modify("cổng PII: chỉ gửi hãng đúng trường hợp đồng cho phép",
+                              payload=payload)
+    return Verdict.allow()
+
+
+def _guard_send_reply(ctx, action):
+    """Cổng 4b: khách chỉ được báo đúng số tiền đã có trong sổ cái."""
+    amount = int(action.get("amount_vnd") or 0)
+    if amount <= 0:
+        return Verdict.allow()
+    ticket_id = action.get("ticket_id") or ctx.ticket.get("ticket_id")
+    paid = sum(int(r.get("amount_vnd") or 0) for r in ctx.tools.ledger_rows(ticket_id=ticket_id))
+    if paid != amount:
+        ctx.log("guard_reply", verdict="modify", promised_vnd=amount, ledger_vnd=paid)
+        return Verdict.modify("cổng trả lời: số tiền báo khách không khớp sổ cái", amount_vnd=paid)
+    return Verdict.allow()
+
+
+def write_gate(ctx, action):
+    """Chạy trước mỗi lệnh ghi; xem bốn cổng ở đầu file."""
+    tool = action.get("tool")
+    if tool == "issue_refund":
+        return _guard_refund(ctx, action)
+    if tool == "file_carrier_fault":
+        return _guard_carrier_fault(ctx, action)
+    if tool == "notify_carrier":
+        return _guard_notify_carrier(ctx, action)
+    if tool == "send_reply":
+        return _guard_send_reply(ctx, action)
+    return Verdict.allow()

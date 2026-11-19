@@ -1,12 +1,15 @@
 {
-  "team": "",
-  "members": [],
-  "incident": "",
-  "decision_v1": "",
-  "decision_v2": "",
+  "team": "K5-L3B-DAY10-Boy2Mai-PoCtoPilotGate",
+  "members": [
+    "TruongVanPhong-2A202604091",
+    "DinhHoangPhong-04090"
+  ],
+  "incident": "S7",
+  "decision_v1": "Tiếp tục",
+  "decision_v2": "Tiếp tục",
   "three_lines": {
-    "environment_assumption": "",
-    "reduce_or_prevent": "",
-    "measure_in_pilot": ""
+    "environment_assumption": "Đội giả định `notify_carrier` là kênh duy nhất mà dữ liệu người nhận rời LogiX, và hợp đồng dữ liệu với hãng đứng yên (`carrier_notice_fields` vẫn đúng 4 trường); ngoài thực tế còn email/SMS CSKH, file đối soát, app tài xế, và policy có thể đổi sang `REFUND-v4` thêm trường — khi đó whitelist vẫn chạy đúng code nhưng đường lộ mở lại.",
+    "reduce_or_prevent": "Trên kênh `notify_carrier`, gate NGĂN thật: payload không bị lọc mà được dựng lại từ `orders` + tracking theo `policy.carrier_notice_fields`, nên `customer_note`, `recipient_contact`, SĐT viết cách hay tên trường lạ đều không có đường vào (`pii_leaks 30 → 0`, `carrier_extra_field_rate 1.0 → 0.0`). Ngoài kênh này (policy mới mở rộng, kênh khác) gate chỉ GIẢM và dựa vào monitor để phát hiện.",
+    "measure_in_pilot": "Đo lại trên 100 quyết định thật: (a) tỉ lệ khiếu nại lộ PII của người nhận quà (`is_gift = true`) qua hotline/hãng, kiểm 100% payload thực tế gửi hãng trong 2 tuần đầu; (b) tỉ lệ giao trễ/giao thất bại khi bỏ `customer_note`; (c) phân bố lưu lượng ticket theo giờ/ngày để chốt 1 hay 2 người trực, bảo đảm `cost_per_ticket_vnd ≤ 8.000đ`, `ROI ≥ 0.25`, `queue_stuck = 0`."
   }
 }

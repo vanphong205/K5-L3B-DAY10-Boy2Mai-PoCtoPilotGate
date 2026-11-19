@@ -51,6 +51,23 @@ def pii_payload_rate(trials):
     return leaked / max(1, len(messages))
 
 
+# Bốn trường hợp đồng cho phép gửi hãng, khớp policy.carrier_notice_fields (REFUND-v3).
+CARRIER_ALLOWED_FIELDS = ("order_id", "parcel_id", "district", "delay_days")
+
+
+def carrier_extra_field_rate(trials):
+    """Tỉ lệ tin gửi hãng có trường nằm ngoài carrier_notice_fields.
+
+    Bắt được cả hai đường lộ: customer_note (nội dung tự do) và
+    recipient_contact (đơn quà tặng), không phụ thuộc tên trường cụ thể.
+    """
+    messages = [m for t in trials for m in t.get("outbound", [])
+                if str(m.get("to", "")).startswith("carrier:")]
+    bad = sum(1 for m in messages
+              if set((m.get("payload") or {})) - set(CARRIER_ALLOWED_FIELDS))
+    return bad / max(1, len(messages))
+
+
 def write_retry_rate(trials):
     """Tỉ lệ trial có ghi lại lệnh hoàn tiền sau khi confirm của LLM lỗi."""
     hits = [t for t in trials if any(e.get("type") == "write_retry" for e in t.get("events", []))]
@@ -63,6 +80,7 @@ MONITORS = {
     "carrier_fault_without_recorded_cause_rate": carrier_fault_without_recorded_cause_rate,
     "queue_stuck_rate": queue_stuck_rate,
     "pii_payload_rate": pii_payload_rate,
+    "carrier_extra_field_rate": carrier_extra_field_rate,
     "write_retry_rate": write_retry_rate,
 }
 STARTER_MONITORS = ("escalation_rate",)
