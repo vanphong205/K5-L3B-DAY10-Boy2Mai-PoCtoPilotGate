@@ -16,7 +16,7 @@ Họ tên đầy đủ và MSSV của **mọi** thành viên; bàn 3 người th
 |   1 | Trương Văn Phong | 2A202604091 | Kỹ sư cổng             |             |
 |   2 | Hoàng Minh | 2A202604103 | Kỹ sư cổng – Đo lường và bằng chứng (P2) |             |
 |   3 | Đinh Hoàng Phong | 04090       | Sản phẩm và kinh doanh |             |
-|   4 |                  |             |                        |             |
+|   4 |  Nguyễn Anh Tú                |   2A202604088          |   Vận hành và pháp lý                     |             |
 
 Ghi `members` trong `submission/submission.json` theo dạng `"HoVaTen-MSSV"`, khớp bảng trên.
 
