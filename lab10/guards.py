@@ -203,33 +203,42 @@ def _guard_carrier_fault(ctx, action):
 
 
 def _guard_notify_carrier(ctx, action):
-    """Cổng 4a: không để PII của người nhận rời hệ thống sang hãng vận chuyển."""
-    payload = dict(action.get("payload") or {})
-    blocked = set((ctx.gates.get("legal") or {}).get("pii_fields_blocked_to_third_party") or [])
-    blocked.add("recipient_contact")
+    """Cổng 4a: tin gửi hãng chỉ chứa đúng trường hợp đồng cho phép (whitelist).
 
-    changed = False
-    for key in list(payload):
-        if key in blocked:
-            payload.pop(key)
-            changed = True
+    Payload được dựng LẠI từ nguồn sự thật (order + tracking DB) theo
+    policy["carrier_notice_fields"], không lọc payload do model/khách tạo ra.
+    Nhờ vậy trường lạ (customer_note, recipient_contact, ...) và số điện thoại
+    viết cách đều không thể đi qua, kể cả khi tên trường thay đổi.
+    """
+    payload_in = dict(action.get("payload") or {})
+    order_id = action.get("order_id") or payload_in.get("order_id") or ctx.ticket.get("order_id")
+    order = ctx.tools.lookup_order(order_id)
+    policy = _effective_policy(ctx)
+    if order is None or policy is None:
+        ctx.log("guard_pii", action="notify_carrier", verdict="deny",
+                reason="thiếu nguồn sự thật")
+        return Verdict.deny("cổng PII: không dựng lại được tin hợp lệ, không gửi hãng")
 
-    order = ctx.tools.lookup_order(action.get("order_id")) or {}
-    recipient = order.get("recipient") or {}
-    needles = [recipient.get("name"), recipient.get("phone"), recipient.get("street")]
-    for key, value in list(payload.items()):
-        if isinstance(value, str):
-            cleaned = value
-            for needle in needles:
-                if needle:
-                    cleaned = cleaned.replace(needle, "[đã ẩn]")
-            if cleaned != value:
-                payload[key] = cleaned
-                changed = True
+    parcel, delay = _parcel_of_ticket(ctx, order)
+    allowed = list(policy.get("carrier_notice_fields") or [])
+    truth = {
+        "order_id": order.get("order_id"),
+        "parcel_id": parcel.get("parcel_id"),
+        "district": (order.get("recipient") or {}).get("district"),
+        "delay_days": delay,
+    }
+    payload = {k: truth[k] for k in allowed if truth.get(k) is not None}
+    missing = sorted(set(allowed) - set(payload))
+    if missing:
+        ctx.log("guard_pii", action="notify_carrier", verdict="deny", missing=missing)
+        return Verdict.deny("cổng PII: thiếu trường bắt buộc, không gửi hãng")
 
-    if changed:
-        ctx.log("guard_pii", action="notify_carrier", keys=sorted(blocked))
-        return Verdict.modify("cổng PII: bỏ thông tin người nhận khỏi tin gửi hãng", payload=payload)
+    if payload != payload_in:
+        ctx.log("guard_pii", action="notify_carrier", kept=sorted(payload),
+                dropped=sorted(set(payload_in) - set(payload)),
+                changed=sorted(k for k in payload if payload_in.get(k) != payload[k]))
+        return Verdict.modify("cổng PII: chỉ gửi hãng đúng trường hợp đồng cho phép",
+                              payload=payload)
     return Verdict.allow()
 
 
