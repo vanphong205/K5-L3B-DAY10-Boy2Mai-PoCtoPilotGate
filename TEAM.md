@@ -45,7 +45,7 @@ File: `lab10/guards.py`, `lab10/monitors.py`.
 
 - Code: `lab10/guards.py` (4 nhóm cổng; trace ghi `guard_policy_pinned`, `guard_refund`, `guard_carrier_fault`, `guard_pii`, `guard_reply`), `lab10/monitors.py` (6 monitor mới).
 - Commit: `54eeac1` (P1: `guards.py` + `monitors.py` + `TEAM.md`), đã vào `main` qua merge `a9c08cc`; vòng 2: `b58181c` (whitelist `notify_carrier` + 1 người trực), sau commit chuẩn hoá LF `f5c15ae`.
-- Lần chạy cuối: `R-S7-after-20261119-174155-3a5780` (S7 · after), `R-base-after-20261119-174150-3a5780` (base · after); `python -m lab10.grade --incident S7` → `R-S7-grade-20261119-174154-3a5780` (sinh cặp `R-S7-before/prepared/after-…`).
+- Lần chạy cuối: `R-S7-after-20261119-175713-3a5780` (và `…-174155-…`), `R-base-after-20261119-174150-3a5780` (base · after); `python -m lab10.grade --incident S7` → `R-S7-grade-20261119-175712-3a5780` (lần đầu: `R-S7-grade-20261119-174154-3a5780`, sinh cặp `R-S7-before/prepared/after-…`).
 - Trace `S7-01@11`, `S7-20@11`, `S7-21@11` (base): payload `notify_carrier` có `customer_note`/`recipient_contact`; trace `S7-02@11` có SĐT viết cách `0987 654 321` lọt qua `replace` chuỗi. Sau whitelist, cả 6 ticket `S7-01/02/04/05/20/21` chỉ còn đúng 4 khoá `order_id`, `parcel_id`, `district`, `delay_days`.
 - Tự kiểm `grade`: `6/6` ô đạt — `5 regression ✅` (`0.9909` → `1.0`, không ca mới hỏng), `6 monitor ✅` (`pii_payload_rate` sáng đèn trên `S7`: `0.2857` → `0.0`), `1 integrity ✅` sau khi thêm `.gitattributes` và chuẩn hoá LF cho working tree.
 - Bàn giao P2/P3: mốc `prepared` đã có (`23ed0256`); hash `17ba8eb1` ở B8 là hash trước khi chuẩn hoá LF — nội dung bản chốt không đổi, chỉ đổi byte kết thúc dòng.
@@ -75,7 +75,7 @@ File: `config/acceptance_criteria.json`, `config/acceptance_criteria.lock`, mụ
 
 - Mã commit: `85d10d1` (soạn tiêu chí & Phiếu A), `dd4ec02` (khôi phục câu 1.2), `6271b08` (`Sign acceptance criteria`), `42e5704` (cập nhật A5), `b789192` (`Nhận thẻ S7`), `7c23e40` (điền `business` trong `operating_gates.json`, B3/B6/B7.4, C5/C7/C12, `TEAM.md`), cùng commit hoàn thiện `B8` (`v1`) và `C12` theo `checkpoint` (`17ba8eb1`).
 - Dữ liệu & phiếu: `config/acceptance_criteria.json`, `config/acceptance_criteria.lock`, `config/operating_gates.json`, `templates/form-a-criteria.md` (`A1`, `A3`, `A4`, `A5`), `templates/form-b-evaluation-gates.md` (`B3`, `B6`, `B7.4`, `B8`), `templates/form-c-incident.md` (`C5`, `C7`, `C12`).
-- Bằng chứng lần chạy vòng 2: `R-S7-before-20261119-174155-3a5780` (`base`), `R-S7-prepared-20261119-174155-3a5780` (`prepared`), `R-S7-after-20261119-174155-3a5780` (`after`), `R-S7-grade-20261119-174154-3a5780` (`PASS-VISIBLE`); bản baseline trước sửa: `R-S7-grade-20261119-174023-d7baf2`. Bộ nền không regression: `R-base-after-20261119-174150-3a5780` (`cost 4456đ`, `ROI 1.24`).
+- Bằng chứng lần chạy vòng 2: `R-S7-before-20261119-175713-3a5780` (`base`), `R-S7-prepared-20261119-175713-3a5780` (`prepared`), `R-S7-after-20261119-175713-3a5780` (`after`), `R-S7-grade-20261119-175712-3a5780` (`PASS-VISIBLE`; lần đầu `R-S7-grade-20261119-174154-3a5780`); bản baseline trước sửa: `R-S7-grade-20261119-174023-d7baf2`. Bộ nền không regression: `R-base-after-20261119-174150-3a5780` (`cost 4456đ`, `ROI 1.24`).
 
 ### Exit ticket
 
