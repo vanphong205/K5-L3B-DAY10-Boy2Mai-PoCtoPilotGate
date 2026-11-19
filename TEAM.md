@@ -14,7 +14,7 @@ Họ tên đầy đủ và MSSV của **mọi** thành viên; bàn 3 người th
 | STT | Họ và tên        | MSSV        | Vai                    | Trưởng nhóm |
 | --: | ---------------- | ----------- | ---------------------- | :---------: |
 |   1 | Trương Văn Phong | 2A202604091 | Kỹ sư cổng             |             |
-|   2 |                  |             |                        |             |
+|   2 | Hoàng Minh | 2A202604103 | Kỹ sư cổng – Đo lường và bằng chứng (P2) |             |
 |   3 | Đinh Hoàng Phong | 04090       | Sản phẩm và kinh doanh |             |
 |   4 |                  |             |                        |             |
 
@@ -54,6 +54,32 @@ File: `lab10/guards.py`, `lab10/monitors.py`.
 
 - Học được: tiền hoàn và lỗi hãng phải tính lại từ nguồn sự thật (tracking DB, chính sách hiệu lực theo ngày, sổ cái), không lấy từ lời khách khai hay đề xuất của model; và một monitor chỉ có giá trị khi nó **sáng đèn đúng trên gói sự cố** (`pii_payload_rate` = 0.2857 trên `S7`) chứ không chỉ đẹp trên bộ nền.
 - Chưa chắc: trần strike mỗi hãng/ngày và trần hoàn tự động mỗi khách/ngày lấy từ `ops_limits` hiện tại có đủ chặt cho mùa cao điểm thật không; nếu chính tracking DB ghi sai thì cổng vẫn cho qua vì cổng tin DB là nguồn sự thật.
+
+## HoangMinh-2A202604103
+
+### Phần việc phụ trách
+
+Vai: Kỹ sư cổng – Đo lường và bằng chứng (P2).
+Câu: `2.1`, `2.2`, `2.8` và `3.0–3.1`.
+Mục phiếu: Phiếu B (`B0–B2`, ghi kết quả `B7.3` cùng P4 và cung cấp bằng chứng `B8`), Phiếu C (`C0–C2`, đối chiếu bằng chứng cho `C12`).
+
+### Đóng góp cụ thể
+
+- Chạy baseline và đối chiếu tiêu chí đã ký. Dò trace `T-002@55`, xác định `model_override` là bước sai đầu tiên. Lời khách khai 5 ngày đã ghi đè giá trị 2 ngày từ tracking, dẫn đến hoàn sai 20.000đ và ghi oan 1 lỗi VNX.
+- Kiểm thử cổng vòng 1 qua bộ nền và hai ca B7.3. Ca khai trễ 12 ngày bị chặn hoàn theo tracking. Ca có thông tin liên hệ vẫn được hoàn đúng 25.000đ và payload gửi hãng chỉ chứa các trường giao nhận được phép.
+- Chốt và xác minh snapshot vòng 1. Lượt `prepared` đạt 110/110, với 0 hoàn sai, 0 lỗi hãng oan, 0 lộ dữ liệu cá nhân và 0 ca ùn. Ghi các bằng chứng vào Phiếu B để nhóm chốt v1.
+
+### Bằng chứng
+
+- Commit `a5c03a5` lưu bản chốt vòng 1 và Phiếu B. Hash checkpoint: `17ba8eb1`. Hash tiêu chí đã ký: `32f676c9`.
+- `runs/R-base-before-20261119-161300-022456/report.json` (B0 dòng 1, B1–B2).
+- `runs/R-base-after-20261119-164422-21124a/report.json` (B0 dòng 2) và hai trace B7.3 ở seed 55 và 11.
+- `runs/R-base-prepared-20261119-164746-21124a/report.json` (B0 dòng 3, B8). Lệnh `lab10.gate` xác nhận các ngưỡng đã ký đều đạt trên bộ nền `prepared`.
+
+### Exit ticket
+
+- Một điều học được: Cần đọc đồng thời trace và chỉ số an toàn. Baseline đạt 109/110 nhưng lượt hỏng duy nhất gây cả hoàn sai lẫn lỗi hãng oan.
+- Một điều còn chưa chắc: Cổng vòng 1 giữ kết quả tốt trên bộ nền. Mình còn cần đo S7 trên các mốc để biết cổng chặn được gì và chi phí hàng chờ thay đổi ra sao khi lưu lượng thấp.
 
 ## DinhHoangPhong-04090
 
