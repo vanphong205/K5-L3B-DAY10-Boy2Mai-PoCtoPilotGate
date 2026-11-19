@@ -40,7 +40,6 @@ DỮ LIỆU nào, ở đâu, ai gán nhãn; TÍNH thế nào để hai người 
 - Thước đo này nói về MỘT bước của agent hay cả luồng? Nếu cả luồng hỏng, nó có chỉ ra bước nào hỏng không?
 - Dữ liệu đã có sẵn (trace, sổ cái) hay phải thu thêm? Nhãn đúng/sai đến từ đâu?
 - Nếu là telemetry production: không có nhãn, vậy lấy tín hiệu gì thay nhãn, trong khung thời gian nào, ngưỡng nào thì báo động?
-
 ### Câu 1.3 · Offline metric cho MỘT bước · Câu 1.4 · Telemetry production
 
 Câu 1.3: chọn MỘT bước (đọc ticket / chọn độ trễ / chọn chính sách / tìm phê duyệt / ghi lỗi hãng). Câu 1.4: tín hiệu cho biết
@@ -48,12 +47,12 @@ trợ lý có đang gây thiệt hại cho bên ngoài LogiX không; không có 
 
 | | Offline, cho MỘT bước (câu 1.3) | Telemetry production (câu 1.4) |
 |---|---|---|
-| **Bước / hành vi được đo** | *(Chờ P1 gửi câu 1.3)* | *(Chờ P4 gửi câu 1.4)* |
-| **Thước đo** (một câu, có đơn vị) | | |
-| **Dữ liệu** (lấy ở đâu, bao nhiêu, ai gán nhãn) | | |
-| **Cách tính** (công thức, mẫu số, cách xử lý ca thiếu dữ liệu) | | |
-| **Khung thời gian / ngưỡng báo động** | (không áp dụng) | |
-| **Điểm mù** (thước đo này KHÔNG thấy gì) | | |
+| **Bước / hành vi được đo** | Ghi lỗi hãng (cụ thể là hãng vận chuyển chịu trách nhiệm) | Theo dõi lệnh ghi lỗi hãng và thông báo gửi hãng, đồng thời kiểm tra hàng chờ người duyệt |
+| **Thước đo** (một câu, có đơn vị) | Tỷ lệ lần chạy ghi lỗi hãng đúng cả đối tượng hãng và căn cứ nguyên nhân so với label chuẩn trên bộ đánh giá offline, tính bằng % | Số sự kiện ghi lỗi hãng thiếu căn cứ tracking, payload gửi hãng có trường PII bị chặn, khiếu nại của khách/hãng/shop trên 100 quyết định và thời gian chờ duyệt lâu nhất; đếm theo cửa sổ 15 phút, không cần nhãn đúng-sai |
+| **Dữ liệu** (lấy ở đâu, bao nhiêu, ai gán nhãn) | Lấy bản ghi output của bước ghi lỗi hãng (bao gồm tên hãng, mã/loại nguyên nhân, quyết định lỗi hay không) và tracking data/đơn hàng trong trace/log của bộ đánh giá offline (như bộ nền 22 ticket × 5 seed hoặc tập test offline của repo); label đúng hay sai do người có thẩm quyền nghiệp vụ vận hành/đối soát gán dựa trên quy tắc và lịch sử tracking. | Log `file_carrier_fault`, trường `delay_cause` trong tracking, sự kiện `legal_gate`/payload của `notify_carrier`, số liệu hàng chờ trong report và sổ khiếu nại hotline; hệ thống ghi tự động, NV-OANH đối soát mẫu mỗi ngày và NV-TUNG nhận cảnh báo |
+| **Cách tính** (công thức, mẫu số, cách xử lý ca thiếu dữ liệu) | $$\text{Tỷ lệ ghi lỗi hãng đúng (\%)} = \frac{\text{Số ca có quyết định, hãng và nguyên nhân ghi lỗi khớp nhãn chuẩn}}{\text{Số ca có bước ghi lỗi hãng / có dữ liệu đối chiếu hợp lệ}} \times 100\%$$ Các ca không đi tới bước ghi lỗi hãng hoặc thiếu log/nhãn đối chiếu sẽ được tách riêng và loại khỏi mẫu số chính (không tính gộp làm sai nếu chưa tới bước đó).| Cứ mỗi 15 phút đếm lỗi ghi hãng thiếu căn cứ và payload có trường bị chặn; tính khiếu nại theo 100 quyết định trong ngày; theo dõi thời gian chờ duyệt lớn nhất. Thiếu tracking/log được tính là tín hiệu thiếu dữ liệu, không coi là an toàn, và chuyển NV-HANH xử lý tay. |
+| **Khung thời gian / ngưỡng báo động** | (không áp dụng) | Cửa sổ 15 phút; báo ngay nếu có ≥1 payload gửi hãng chứa trường cá nhân bị chặn hoặc ≥1 lỗi hãng không có nguyên nhân tracking hợp lệ; báo NV-TUNG khi chờ duyệt >30 phút, thu hẹp pilot nếu >60 phút hoặc có ca ùn |
+| **Điểm mù** (thước đo này KHÔNG thấy gì) | Không phát hiện được trường hợp dữ liệu tracking/event gốc bị sai lệch hoặc thiếu update từ bên ngoài, và không phản ánh tác động tích lũy/chi phí phát sinh khi vận hành ở môi trường sản xuất thật. | Không có nhãn production nên không biết chắc khoản hoàn hay quyết định ghi lỗi có đúng chính sách; lọc tên trường không phát hiện PII viết trong trường tự do ngoài các payload được quan sát. Cần đối soát mẫu và phản hồi của hãng/người nhận. |
 
 **Ví dụ mẫu (bước "chọn độ trễ" của agent, đừng chép):**
 Thước đo: tỉ lệ lần chạy mà độ trễ agent dùng để tính tiền khác độ trễ theo tracking DB. Dữ liệu: sự kiện `proposal.delay_days_used`
