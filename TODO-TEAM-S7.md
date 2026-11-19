@@ -1,10 +1,11 @@
 # Bảng phân công việc còn lại · Vòng 2 (Thẻ S7) & Nộp bài · Nhóm Boy2Mai
 
-> **Tình trạng repo hiện tại (tính tới commit `9adbe76`):**
+> **Tình trạng repo hiện tại (tính tới commit `77e83f0`):**
 > - **Phiếu A (`templates/form-a-criteria.md`) + `config/acceptance_criteria.json` (`.lock`):** ĐÃ XONG & ĐÃ KÝ (`6271b08`). Không sửa `acceptance_criteria.json` nữa!
 > - **Chốt Vòng 1 (`checkpoint`):** ĐÃ CHỐT (`17ba8eb1` — `guards_round1.py`, `operating_gates.round1.json`, `round1.lock`). Không sửa 3 file này!
 > - **Thẻ sự cố `S7` (`incidents/S7/`):** ĐÃ KÉO VỀ (`b789192`).
 > - **Phần P3 (Đinh Hoàng Phong - `04090`):** ĐÃ XONG 95% (`business` trong `operating_gates.json`, `B3`, `B6` Kinh doanh, `B7.4`, `B8 v1 = Tiếp tục`, `Thẻ đã bốc: S7`, `C5 · Câu 3.2`, `C7` nhánh `[3]`, `C12 · v2 = Cải tiến thêm` + 3 dòng bắt buộc, và `TEAM.md`). **Chỉ còn chờ P2 gắn mã lần chạy `S7` cuối vào C12 (và cập nhật lại `v2` nếu P4/P1 sửa thêm ở Vòng 2).**
+> - **Mục `C3.3` (`C3` của S7):** P4 vừa điền xong ở commit `77e83f0`! Các mục còn trống trên Phiếu C hiện tại: `C0`, `C1`, `C2`, `C4`, `C5 (3.3)`, `C6`, `C7 ([1]-[2])`, `C8`, `C9`, `C10`, `C11`.
 >
 > **Lưu ý chống conflict Git:** Mỗi người chỉ sửa file mình sở hữu; gửi text qua chat cho người chép chính của từng phiếu; luôn `git pull --no-rebase origin main` trước khi push.
 
@@ -83,8 +84,8 @@
      - **Phương án A (Khuyên dùng nếu muốn `S7` xanh toàn bộ để `v2 = Tiếp tục`):** đổi `operations.reviewers_on_shift` về `1` và `review_capacity_per_hour` về `6` trong `config/operating_gates.json` (khi đó `S7` chỉ tốn `5.005đ/ticket`, `ROI = 1.00`, `0` ca ùn). *Nếu chọn A, nhớ báo P3 cập nhật lại C12 từ `Cải tiến thêm` sang `Tiếp tục` và `submission.json`.*
      - **Phương án B (Giữ `reviewers_on_shift = 2`):** giữ nguyên `config/operating_gates.json`, giữ nguyên `v2 = Cải tiến thêm` như P3 đã điền sẵn trong `C12` (tuyệt đối không ghi `Tiếp tục` khi `ROI < 0.25`).
 
-2. **Điền toàn bộ phần của P4 trong Phiếu C (`templates/form-c-incident.md` — đồng thời nhận phần C0–C2 từ P2 và C6/C8/C9 từ P1 dán vào):**
-   - **C3 · Mục `C3.3 Hiệu chỉnh lòng tin` (phần riêng BẮT BUỘC của thẻ S7):** điền bảng 4 mốc (`Tin quá mức` của người đặt hàng & người nhận hàng, `Không tin` của người nhận hàng sau sự cố, `Tin vừa đủ`) và 3 dòng **Rút ra** (dữ liệu rời hệ thống: `recipient_contact`/`customer_note` → hãng; đường khả thi với người nhận không dùng hệ thống là làm cho hệ thống chỉ gửi đúng trường cho phép; biện pháp giảm vs bảo đảm).
+2. **Điền các mục còn lại của P4 trong Phiếu C (`templates/form-c-incident.md` — `C3.3` đã xong ở `77e83f0`; nhận thêm C0–C2 từ P2 và C6/C8/C9 từ P1 dán vào):**
+   - *(Lưu ý: P4 đã hoàn thành `C3.3 Hiệu chỉnh lòng tin` ở `77e83f0`; phần kết luận có nhắc allowlist ở tầng code — nhớ báo P1 đồng bộ thực tế `guards.py` hoặc ghi rõ giảm vs ngăn khớp code cuối).*
    - **C4 · Câu 3.1 (`HAZOP của thẻ`, ≥ 3 dòng):** phân tích trên `notify_carrier` với dữ kiện `S7` (`S7-01`, `S7-02`, `S7-20`, kèm ≥ 1 nhánh chưa thấy trên trace).
    - **C5 · Câu 3.3:** điền 1 giả định môi trường mà thiết kế ngầm tin nhưng dễ sai ngoài thực tế (và lý do có thể sai).
    - **C7 · Câu 3.5 (nhánh `[2]` pháp lý/vận hành):** điền `legal.pii_fields_blocked_to_third_party` (và `operations.reviewers_on_shift` nếu có đổi), tầng, **GIẢM** hay **NGĂN**, và mã lần chạy `S7 · after`.
