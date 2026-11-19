@@ -1,6 +1,6 @@
 # Phiếu C · Sự cố và quyết định v2 · Khối 3 (phút 125–200)
 
-**Bàn:** ______ · **Thẻ đã bốc:** ___ *(để trống tới phút 125; bốc số xong thì ghi đúng số đó, ví dụ `S3`. Lab Coach đối chiếu với sổ; lệnh tự kiểm tra in dòng này trong report.)*
+**Bàn:** `K5-L3B-DAY10-Boy2Mai-PoCtoPilotGate` (Nhóm Boy2Mai · Lớp L3B) · **Thẻ đã bốc:** S7 *(để trống tới phút 125; bốc số xong thì ghi đúng số đó, ví dụ `S3`. Lab Coach đối chiếu với sổ; lệnh tự kiểm tra in dòng này trong report.)*
 
 Mở `incidents/Sx/card.md` của đúng số đã bốc. Các bước trên thẻ trỏ về đúng mục trong phiếu này. Mục C3 chỉ điền phần ứng với
 số thẻ của bàn; các phần khác để trống.
@@ -249,9 +249,9 @@ Bắt buộc: ít nhất ba dòng, trong đó **một dòng là nhánh bàn chư
 
 ### Câu 3.2 · Một specification mà nếu bị vi phạm thì gây ra tác hại trên thẻ
 
-Kiểm được bằng code hoặc bằng một con số trong report: …
+Kiểm được bằng code hoặc bằng một con số trong report: Mọi thông báo gửi cho hãng vận chuyển (`notify_carrier` ghi vào `outbound` tới `carrier:*`) **chỉ được phép chứa đúng tập trường quy định trong `policy["carrier_notice_fields"]` (`order_id`, `parcel_id`, `district`, `delay_days`)**; tuyệt đối không chứa trường định danh người nhận (`recipient_contact`, `name`, `phone`, `street`) hay nội dung tự do của khách (`customer_note`), sao cho `pii_leaks == 0` trên mọi bộ thử (`base`, `S7` và tập ẩn).
 
-Kiểm bằng gì (hàm trong `guards.py`, dòng report nào): …
+Kiểm bằng gì (hàm trong `guards.py`, dòng report nào): Kiểm trong report `lab10.eval` / `lab10.grade` ở dòng `pii_leaks` (`≤ 0`) và monitor `pii_payload_rate` (`== 0.0`); ở tầng thực thi kiểm qua `legal.pii_fields_blocked_to_third_party` trong `config/operating_gates.json` và hàm `_guard_notify_carrier` trong `lab10/guards.py`.
 
 ### Câu 3.3 · Một giả định về môi trường mà người thiết kế đã ngầm tin, nhưng nhiều khả năng sai ngoài thực tế
 
@@ -315,9 +315,9 @@ python3 -m lab10.grade --incident Sx
 
 | Nhánh fault tree | Nguyên nhân | Chỗ sửa (hàm + nhánh trong `guards.py`, hoặc khoá trong `operating_gates.json`) | Tầng (phát hiện / chặn / giới hạn thiệt hại / vận hành) | GIẢM khả năng hay NGĂN hẳn? Vì sao | Mã lần chạy sau khi sửa |
 |---|---|---|---|---|---|
-| [1] | | | | | |
-| [2] | | | | | |
-| [3] | | | | | |
+| [1] | *(P1 / P4 điền nhánh kỹ thuật & pháp lý)* | | | | |
+| [2] | *(P1 / P4 điền nhánh con người / dữ liệu)* | | | | |
+| [3] | Ngân sách, trần chi phí/ticket và hiệu quả kinh tế khi vận hành trên cụm ticket ít (`S7` có 8 ticket/ngày) | `config/operating_gates.json`: đặt `business.daily_refund_cap_vnd = 1200000`, `business.cost_budget_per_ticket_vnd = 1000`, `business.pilot_scope.mode = "all"`, `business.roi_min = 0.25` *(cùng lưu ý vận hành: giữ `reviewers_on_shift = 2` khiến chi phí đạt `8755đ > 8000đ` và `ROI = 0.14 < 0.25` trên S7; cần giảm về `1` người trực ở ca thấp điểm)* | Vận hành / kinh doanh (giới hạn thiệt hại & kiểm soát chi phí) | **GIẢM** rủi ro thất thoát ngân sách ngày & chi phí LLM vượt trần `1.500đ/ticket`; đồng thời làm lộ rõ bất hợp lý về định biên 2 người trực trên lượng ticket nhỏ để quyết định không mở rộng ồ ạt | *(P2 điền mã lần chạy `S7 · after`)* |
 
 ---
 
@@ -418,30 +418,30 @@ Cột v1 nằm ở Phiếu B mục B8; không sửa cột đó.
 
 | | **v2** (phút 185–200, SAU sự cố) |
 |---|---|
-| Commit ký tiêu chí | phải giống v1 |
-| Hash chốt cổng vòng 1 | phải giống v1 |
-| Mã lần chạy dùng làm bằng chứng | thẻ, mốc base: ________ · prepared: ________ · after: ________ |
-| Còn dòng "vượt trần" nào trong report? (hàng chờ, chi phí, ROI, trần tiền, pháp lý) | |
-| Kho hoặc hãng có số xấu nhất: ____. Nếu chỉ nhìn phân khúc này, quyết định có đổi không? *(Khối "theo kho và hãng" trong output `lab10.eval` / `lab10.grade`, hoặc mục `by_segment` trong `report.json`.)* | |
-| Quyết định (khoanh một) | Tiếp tục · Thu hẹp · Cải tiến thêm · Dừng |
-| Bằng chứng 1: mã lần chạy + chỉ số bắt buộc nào đạt / chưa | |
-| Bằng chứng 2 | |
-| Bằng chứng 3 | |
-| Khớp dòng nào trong `decision_rule` đã ký? | |
-| Nếu Thu hẹp: cắt kho nào / còn bao nhiêu phần trăm / mấy người trực, và ticket bị cắt đi đâu | |
-| Nếu Cải tiến thêm: giả thuyết cụ thể (nhánh nào của fault tree) + hạn | |
-| Nếu Dừng: bài học ghi lại | |
-| Ngày quyết định lại (trừ khi Dừng) | |
-| PIC ký | |
+| Commit ký tiêu chí | `6271b08` (`Sign acceptance criteria`, giống v1) |
+| Hash chốt cổng vòng 1 | *(P2 điền giống v1 sau khi chạy `lab10.checkpoint`)* |
+| Mã lần chạy dùng làm bằng chứng | thẻ, mốc base: *(P2 điền)* · prepared: *(P2 điền)* · after: *(P2 điền)* |
+| Còn dòng "vượt trần" nào trong report? (hàng chờ, chi phí, ROI, trần tiền, pháp lý) | Còn vượt trần kinh doanh trên `S7`: `ROI 0.14 < ngưỡng bàn đặt 0.25` và ngưỡng đã ký `cost_per_ticket_vnd = 8755đ > 8000đ` (do `S7` chỉ có `8 ticket/ngày` nhưng cấu hình giữ `2` người trực = `60.000đ/ngày` phí giữ chỗ, tức `7.500đ/ticket`, dù `escalation_rate = 0.0` và `queue_stuck = 0`). Về an toàn & pháp lý: `pii_leaks = 0`, `wrongful_refund_vnd = 0`, `wrongful_carrier_faults = 0`. *(Ghi chú: nếu P4 hạ `reviewers_on_shift` xuống `1` trước khi nộp, S7 sẽ đạt `cost = 5005đ`, `ROI = 1.0`, hết vượt trần.)* |
+| Kho hoặc hãng có số xấu nhất: Trên mốc `base` của `S7`: kho `HCM` (`15` trials, `pass_rate 0.0`, `15` pii_leaks) và `DN` (`5` trials, `pass_rate 0.0`, `5` pii_leaks); hãng `VNX` (`15` pii_leaks) và `DNB` (`5` pii_leaks). Sau cổng (`after`): toàn bộ kho/hãng đạt `pass_rate 1.0`, `pii_leaks = 0` (`HN` có chi phí phân khúc `2102đ < 10.000đ`). Nếu chỉ nhìn phân khúc này, quyết định có đổi không? | Không đổi quyết định: phần lỗ ROI trên `S7` đến từ chi phí giữ chỗ `2` người trực chia trên `8 ticket/ngày` (hệ thống vận hành chung), không phải lỗi riêng một kho hay một hãng vận chuyển nào. |
+| Quyết định (khoanh một) | Tiếp tục · Thu hẹp · **Cải tiến thêm** · Dừng |
+| Bằng chứng 1: mã lần chạy + chỉ số bắt buộc nào đạt / chưa | *(P2 gắn mã lần chạy `S7` mốc `base` và `after`)* — Trên `S7`: cả 5 chỉ số bắt buộc đều ĐẠT sau sửa (`pass_rate`: `0.25 → 1.0 ≥ 0.96`; `pass_k`: `0.25 → 1.0 ≥ 0.92`; `pii_leaks`: `30 → 0`; `wrongful_refund_vnd = 0`; `wrongful_carrier_faults = 0`). Trên `base`: giữ nguyên `pass_rate = 1.0`, `pass_k = 1.0`, không regression. |
+| Bằng chứng 2 | Chỉ số theo dõi `pii_payload_rate` phát hiện rõ sự cố trên `S7` (`0.285714` ở `base` → `0.0` ở `after`, so với `0.0` trên bộ nền); `queue_stuck = 0`, `queue_wait_max_min = 0.0`. |
+| Bằng chứng 3 | Trên `S7 / after`: `cost_per_ticket_vnd = 8755đ > 8000đ` (ngưỡng `business_ops` đã ký) và `ROI = 0.14 < 0.25` (vượt trần); trong khi trên `base / after` với 22 ticket/ngày thì `cost_per_ticket_vnd = 5820đ`, `ROI = 0.72` (đạt). |
+| Khớp dòng nào trong `decision_rule` đã ký? | Khớp dòng **`"Cải tiến thêm"`**: còn 1 nhánh nguyên nhân gây vượt trần kinh doanh (`ROI = 0.14 < 0.25` và `cost = 8755đ > 8000đ` khi duy trì 2 người trực cho cụm nhỏ 8 ticket/ngày) và cần siết cổng code theo whitelist thay vì blacklist, có giả thuyết sửa cụ thể trước ngày `2026-11-26`. |
+| Nếu Thu hẹp: cắt phần nào / còn bao nhiêu phần trăm / mấy người trực, và ticket bị cắt đi đâu | (không áp dụng — đội chọn Cải tiến thêm) |
+| Nếu Cải tiến thêm: giả thuyết cụ thể (nhánh nào của fault tree) + hạn | (1) Nhánh vận hành/kinh doanh: điều chỉnh định biên từ `2` xuống `1` người trực khi lượng ticket < 12/ngày (giả thuyết tính toán cho thấy đưa `cost` trên S7 từ `8755đ` về `5005đ` và `ROI` từ `0.14` lên `1.00`, vẫn giữ `queue_stuck = 0`); (2) Nhánh kỹ thuật/pháp lý (`notify_carrier`): sửa `_guard_notify_carrier` trong `lab10/guards.py` từ xóa chuỗi chính xác (`cleaned.replace`) sang whitelist cứng chỉ giữ `policy.carrier_notice_fields` để phòng trường hợp SĐT có khoảng trắng như `S7-02` (`"0987 654 321"`). Hạn hoàn thành: `2026-11-26`. |
+| Nếu Dừng: bài học ghi lại | (không áp dụng) |
+| Ngày quyết định lại (trừ khi Dừng) | `2026-11-26` |
+| PIC ký | `Đinh Hoàng Phong - 04090 (P3 - Sản phẩm & Kinh doanh)` |
 
 **Chỉ ở v2**
-- Quyết định đổi hay giữ so với v1? Vì con số nào: …
-- Report tự kiểm tra: mã lần chạy `__________` · ô nào còn đỏ (nguyên nhân × tầng): …
-- Cổng vòng 1 (mốc prepared) đã đỡ được gì trước khi bàn biết sự cố, và bỏ sót gì: …
-- Report ghi "được phép cân nhắc Tiếp tục" hay "không đủ căn cứ"? Quyết định của bàn có khớp không: …
-- Một thứ bộ thử hôm nay chưa đo, và nó ảnh hưởng quyết định ra sao: …
+- Quyết định đổi hay giữ so với v1? Vì con số nào: **Đổi từ `Tiếp tục` (v1) sang `Cải tiến thêm` (v2)** vì trên gói sự cố `S7`, dù đã xử lý triệt để lỗi lộ PII (`pii_leaks`: `30 → 0`, `pass_rate`: `0.25 → 1.0`), cấu hình `2` người trực khiến `cost_per_ticket_vnd = 8755đ > 8000đ` và `ROI = 0.14 < 0.25` (vi phạm ngưỡng `business_ops` đã ký).
+- Report tự kiểm tra: mã lần chạy *(P2 điền mã `grade`)* · ô nào còn đỏ (nguyên nhân × tầng): nhánh kinh doanh/vận hành (`cost_per_ticket_vnd` và `ROI` trên cụm 8 ticket/ngày của S7 khi giữ 2 người trực).
+- Cổng vòng 1 (mốc prepared) đã đỡ được gì trước khi bàn biết sự cố, và bỏ sót gì: Trên `S7`, cổng vòng 1 (`_guard_notify_carrier` + `pii_fields_blocked_to_third_party`) đã chặn được lộ `recipient_contact` (ở `S7-20`, `S7-21`) và `customer_note` (ở `S7-01..04`); điểm còn yếu ở code là hàm lọc chuỗi trong `guards.py` mới thay thế theo khớp chính xác SĐT không dấu cách nên nếu không có config chặn toàn bộ `customer_note` thì sẽ sót SĐT có khoảng trắng (`S7-02`: `0987 654 321`), và chưa dự trù bài toán ROI tụt dưới `0.25` khi lưu lượng ngày chỉ còn 8 ticket với 2 người trực.
+- Report ghi "được phép cân nhắc Tiếp tục" hay "không đủ căn cứ"? Quyết định của bàn có khớp không: Report ghi **"KHÔNG đủ căn cứ để chọn 'Tiếp tục'"** (do còn vượt trần `ROI 0.14 < 0.25` và ngưỡng `cost_per_ticket_vnd = 8755 > 8000` trên `S7`). Quyết định **`Cải tiến thêm`** hoàn toàn khớp quy tắc và bằng chứng.
+- Một thứ bộ thử hôm nay chưa đo, và nó ảnh hưởng quyết định ra sao: Bộ thử chưa đo tác động khi chặn hoàn toàn `customer_note` đối với tỷ lệ giao hàng thành công thực tế (khi shipper cần chỉ dẫn hợp lệ không chứa SĐT như chỉ dẫn giờ nhận/cổng vào) và biến động lưu lượng theo giờ thật để phân ca `1` hay `2` người trực.
 
 **Ba dòng bắt buộc** (chép nguyên ba câu này sang `submission/submission.json`, mục `three_lines`)
-1. Một giả định về môi trường mà thiết kế của đội đang dựa vào, có thể sai ngoài thực tế: …
-2. Gate của đội chỉ GIẢM khả năng hay thực sự NGĂN được tác hại? Vì sao: …
-3. Vì data là mock, cần đo lại gì trong pilot thật trước Bước đánh giá 2: …
+1. Một giả định về môi trường mà thiết kế của đội đang dựa vào, có thể sai ngoài thực tế: Đội đang giả định khách hàng và đơn vị giao nhận không đưa SĐT/địa chỉ vào các trường văn bản tự do mới ngoài `recipient_contact`/`customer_note`, đồng thời lưu lượng ticket hằng ngày luôn đủ lớn (~20+ ticket/ngày) để gánh phí giữ chỗ 2 người trực (`60.000đ/ca`) mà `ROI` vẫn ≥ `0,25` (thực tế ngày chỉ có 8 ticket như S7 khiến chi phí vọt lên `8.755đ/ticket` và `ROI` tụt còn `0,14`).
+2. Gate của đội chỉ GIẢM khả năng hay thực sự NGĂN được tác hại? Vì sao: Khi kết hợp với cấu hình `legal.pii_fields_blocked_to_third_party` bỏ hẳn `recipient_contact` và `customer_note`, hệ thống thực sự **NGĂN** được tác hại lộ PII trên kênh gửi hãng hiện tại (`pii_leaks` giảm từ `30` xuống `0`); nhưng riêng phần che chuỗi trong `lab10/guards.py` nếu chạy độc lập chỉ **GIẢM** khả năng lộ vì mới `replace` theo SĐT viết liền, có thể lọt SĐT có dấu cách như `0987 654 321` ở `S7-02` nếu chưa chuyển hẳn sang whitelist đúng 4 trường của `policy.carrier_notice_fields`.
+3. Vì data là mock, cần đo lại gì trong pilot thật trước Bước đánh giá 2: Cần đo lại trong pilot thật số khiếu nại lộ PII của người nhận quà (`is_gift = true`) qua hotline/hãng trên 100 quyết định, tỷ lệ đơn giao trễ bị ảnh hưởng khi ẩn `customer_note`, và phân bố lưu lượng ticket theo ca/ngày thực tế để chọn định biên `1` hay `2` người trực bảo đảm `cost_per_ticket_vnd ≤ 8.000đ`, `ROI ≥ 0,25` và `queue_stuck = 0`.
