@@ -1,15 +1,33 @@
 {
-  "team": "K5-L3B-DAY10-Boy2Mai-PoCtoPilotGate",
+  "team": "Boy2Mai",
   "members": [
-    "TruongVanPhong-2A202604091",
-    "DinhHoangPhong-04090"
+    {
+      "name": "Trương Văn Phong",
+      "student_id": "2A202604091",
+      "role": "Kỹ sư cổng"
+    },
+    {
+      "name": "Hoàng Minh",
+      "student_id": "2A202604103",
+      "role": "Kỹ sư cổng – Đo lường và bằng chứng (P2)"
+    },
+    {
+      "name": "Đinh Hoàng Phong",
+      "student_id": "04090",
+      "role": "Sản phẩm và kinh doanh"
+    },
+    {
+      "name": "Nguyễn Anh Tú",
+      "student_id": "2A202604088",
+      "role": "Vận hành và pháp lý"
+    }
   ],
   "incident": "S7",
   "decision_v1": "Tiếp tục",
-  "decision_v2": "Tiếp tục",
+  "decision_v2": "Cải tiến thêm",
   "three_lines": {
-    "environment_assumption": "Đội giả định `notify_carrier` là kênh duy nhất mà dữ liệu người nhận rời LogiX, và hợp đồng dữ liệu với hãng đứng yên (`carrier_notice_fields` vẫn đúng 4 trường); ngoài thực tế còn email/SMS CSKH, file đối soát, app tài xế, và policy có thể đổi sang `REFUND-v4` thêm trường — khi đó whitelist vẫn chạy đúng code nhưng đường lộ mở lại.",
-    "reduce_or_prevent": "Trên kênh `notify_carrier`, gate NGĂN thật: payload không bị lọc mà được dựng lại từ `orders` + tracking theo `policy.carrier_notice_fields`, nên `customer_note`, `recipient_contact`, SĐT viết cách hay tên trường lạ đều không có đường vào (`pii_leaks 30 → 0`, `carrier_extra_field_rate 1.0 → 0.0`). Ngoài kênh này (policy mới mở rộng, kênh khác) gate chỉ GIẢM và dựa vào monitor để phát hiện.",
-    "measure_in_pilot": "Đo lại trên 100 quyết định thật: (a) tỉ lệ khiếu nại lộ PII của người nhận quà (`is_gift = true`) qua hotline/hãng, kiểm 100% payload thực tế gửi hãng trong 2 tuần đầu; (b) tỉ lệ giao trễ/giao thất bại khi bỏ `customer_note`; (c) phân bố lưu lượng ticket theo giờ/ngày để chốt 1 hay 2 người trực, bảo đảm `cost_per_ticket_vnd ≤ 8.000đ`, `ROI ≥ 0.25`, `queue_stuck = 0`."
+    "environment_assumption": "Môi trường pilot giả định dữ liệu tracking chính xác, chính sách hoàn tiền được cập nhật theo ngày hiệu lực, có nhân sự vận hành trực và người có thẩm quyền phê duyệt các trường hợp vượt hạn mức. Thông tin cá nhân của người nhận hàng không được tự ý chia sẻ cho hãng vận chuyển.",
+    "reduce_or_prevent": "Triển khai các cổng kiểm soát trước khi thực hiện hành động ghi dữ liệu và gửi thông tin ra bên ngoài. Tính lại quyền lợi hoàn tiền từ tracking DB và chính sách hiện hành; chặn hoàn tiền trùng, hoàn tiền vượt hạn mức và ghi lỗi hãng khi thiếu bằng chứng. Giới hạn payload gửi hãng trong các trường order_id, parcel_id, district, delay_days; loại bỏ thông tin cá nhân. Bổ sung monitor cảnh báo rò rỉ PII, model override, hàng chờ ùn tắc và retry ghi dữ liệu. Khi chi phí hoặc ROI vượt ngưỡng, cần thu hẹp pilot hoặc chuyển sang xử lý thủ công.",
+    "measure_in_pilot": "Theo dõi pass_rate tối thiểu 0.96, pass_k tối thiểu 0.92, escalation_rate tối đa 0.35, cost_per_ticket tối đa 8.000đ, ROI tối thiểu 0.25 và queue_stuck bằng 0. Các chỉ số an toàn gồm hoàn tiền sai, ghi lỗi hãng oan và rò rỉ PII đều phải bằng 0. Trên sự cố S7, pass_rate tăng từ 0.25 lên 1.0, số lần lộ PII giảm từ 30 xuống 0; tuy nhiên chi phí vẫn ở mức 8.755đ/ticket và ROI chỉ đạt 0.14, không đáp ứng tiêu chí kinh doanh. Vì vậy nhóm quyết định cải tiến phương án nhân sự và chi phí, sau đó đánh giá lại trước khi mở rộng pilot."
   }
 }

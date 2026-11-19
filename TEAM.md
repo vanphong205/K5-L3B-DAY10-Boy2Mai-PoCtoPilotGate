@@ -14,9 +14,9 @@ Họ tên đầy đủ và MSSV của **mọi** thành viên; bàn 3 người th
 | STT | Họ và tên        | MSSV        | Vai                    | Trưởng nhóm |
 | --: | ---------------- | ----------- | ---------------------- | :---------: |
 |   1 | Trương Văn Phong | 2A202604091 | Kỹ sư cổng             |             |
-|   2 |                  |             |                        |             |
+|   2 | Hoàng Minh | 2A202604103 | Kỹ sư cổng – Đo lường và bằng chứng (P2) |             |
 |   3 | Đinh Hoàng Phong | 04090       | Sản phẩm và kinh doanh |             |
-|   4 |                  |             |                        |             |
+|   4 |  Nguyễn Anh Tú                |   2A202604088          |   Vận hành và pháp lý                     |             |
 
 Ghi `members` trong `submission/submission.json` theo dạng `"HoVaTen-MSSV"`, khớp bảng trên.
 
@@ -55,6 +55,32 @@ File: `lab10/guards.py`, `lab10/monitors.py`.
 - Học được: tiền hoàn và lỗi hãng phải tính lại từ nguồn sự thật (tracking DB, chính sách hiệu lực theo ngày, sổ cái), không lấy từ lời khách khai hay đề xuất của model; và một monitor chỉ có giá trị khi nó **sáng đèn đúng trên gói sự cố** (`pii_payload_rate` = 0.2857 trên `S7`) chứ không chỉ đẹp trên bộ nền.
 - Chưa chắc: trần strike mỗi hãng/ngày và trần hoàn tự động mỗi khách/ngày lấy từ `ops_limits` hiện tại có đủ chặt cho mùa cao điểm thật không; nếu chính tracking DB ghi sai thì cổng vẫn cho qua vì cổng tin DB là nguồn sự thật.
 
+## HoangMinh-2A202604103
+
+### Phần việc phụ trách
+
+Vai: Kỹ sư cổng – Đo lường và bằng chứng (P2).
+Câu: `2.1`, `2.2`, `2.8` và `3.0–3.1`.
+Mục phiếu: Phiếu B (`B0–B2`, ghi kết quả `B7.3` cùng P4 và cung cấp bằng chứng `B8`), Phiếu C (`C0–C2`, đối chiếu bằng chứng cho `C12`).
+
+### Đóng góp cụ thể
+
+- Chạy baseline và đối chiếu tiêu chí đã ký. Dò trace `T-002@55`, xác định `model_override` là bước sai đầu tiên. Lời khách khai 5 ngày đã ghi đè giá trị 2 ngày từ tracking, dẫn đến hoàn sai 20.000đ và ghi oan 1 lỗi VNX.
+- Kiểm thử cổng vòng 1 qua bộ nền và hai ca B7.3. Ca khai trễ 12 ngày bị chặn hoàn theo tracking. Ca có thông tin liên hệ vẫn được hoàn đúng 25.000đ và payload gửi hãng chỉ chứa các trường giao nhận được phép.
+- Chốt và xác minh snapshot vòng 1. Lượt `prepared` đạt 110/110, với 0 hoàn sai, 0 lỗi hãng oan, 0 lộ dữ liệu cá nhân và 0 ca ùn. Ghi các bằng chứng vào Phiếu B để nhóm chốt v1.
+
+### Bằng chứng
+
+- Commit `a5c03a5` lưu bản chốt vòng 1 và Phiếu B. Hash checkpoint: `17ba8eb1`. Hash tiêu chí đã ký: `32f676c9`.
+- `runs/R-base-before-20261119-161300-022456/report.json` (B0 dòng 1, B1–B2).
+- `runs/R-base-after-20261119-164422-21124a/report.json` (B0 dòng 2) và hai trace B7.3 ở seed 55 và 11.
+- `runs/R-base-prepared-20261119-164746-21124a/report.json` (B0 dòng 3, B8). Lệnh `lab10.gate` xác nhận các ngưỡng đã ký đều đạt trên bộ nền `prepared`.
+
+### Exit ticket
+
+- Một điều học được: Cần đọc đồng thời trace và chỉ số an toàn. Baseline đạt 109/110 nhưng lượt hỏng duy nhất gây cả hoàn sai lẫn lỗi hãng oan.
+- Một điều còn chưa chắc: Cổng vòng 1 giữ kết quả tốt trên bộ nền. Mình còn cần đo S7 trên các mốc để biết cổng chặn được gì và chi phí hàng chờ thay đổi ra sao khi lưu lượng thấp.
+
 ## DinhHoangPhong-04090
 
 ### Phần việc phụ trách
@@ -76,6 +102,69 @@ File: `config/acceptance_criteria.json`, `config/acceptance_criteria.lock`, mụ
 - Mã commit: `85d10d1` (soạn tiêu chí & Phiếu A), `dd4ec02` (khôi phục câu 1.2), `6271b08` (`Sign acceptance criteria`), `42e5704` (cập nhật A5), `b789192` (`Nhận thẻ S7`), `7c23e40` (điền `business` trong `operating_gates.json`, B3/B6/B7.4, C5/C7/C12, `TEAM.md`), cùng commit hoàn thiện `B8` (`v1`) và `C12` theo `checkpoint` (`17ba8eb1`).
 - Dữ liệu & phiếu: `config/acceptance_criteria.json`, `config/acceptance_criteria.lock`, `config/operating_gates.json`, `templates/form-a-criteria.md` (`A1`, `A3`, `A4`, `A5`), `templates/form-b-evaluation-gates.md` (`B3`, `B6`, `B7.4`, `B8`), `templates/form-c-incident.md` (`C5`, `C7`, `C12`).
 - Bằng chứng lần chạy vòng 2: `R-S7-before-20261119-175713-3a5780` (`base`), `R-S7-prepared-20261119-175713-3a5780` (`prepared`), `R-S7-after-20261119-175713-3a5780` (`after`), `R-S7-grade-20261119-175712-3a5780` (`PASS-VISIBLE`; lần đầu `R-S7-grade-20261119-174154-3a5780`); bản baseline trước sửa: `R-S7-grade-20261119-174023-d7baf2`. Bộ nền không regression: `R-base-after-20261119-174150-3a5780` (`cost 4456đ`, `ROI 1.24`).
+
+  ## NguyenAnhTu-2A202604088
+
+### Phần việc phụ trách
+
+Phụ trách **Vận hành và pháp lý** của dự án PoCtoPilotGate, tập trung vào hai cổng `operations` và `legal` trong `config/operating_gates.json`.
+
+Các đầu việc chính:
+- Hoàn thiện cấu hình vận hành: người phụ trách (PIC), người duyệt, số lượng nhân sự trực, công suất xử lý, SLA, ghi chú quyết định và tỷ lệ kiểm tra mẫu.
+- Xây dựng điều kiện cảnh báo và dừng pilot khi phát sinh các rủi ro vận hành hoặc pháp lý.
+- Kiểm soát dữ liệu cá nhân trong payload gửi cho bên vận chuyển và yêu cầu ghi nhận nguyên nhân trước khi quy lỗi cho hãng.
+- Phụ trách Phiếu B: B4–B5 và B7.5–B7.6; Phiếu C: C11.
+- Tổng hợp thông tin thành viên, vai trò và thông tin repo trong `submission/submission.json`.
+
+### Đóng góp cụ thể
+
+**1. Thiết lập cổng vận hành (`operations`)**
+
+- Phân công NV-TUNG (Lê Thanh Tùng) làm PIC vận hành, chịu trách nhiệm theo dõi hoạt động và xử lý khi cần tắt trợ lý.
+- Phân công NV-HANH (Trần Thị Hạnh) làm người duyệt các quyết định vượt hạn mức.
+- Đề xuất bố trí 2 người trực, với công suất xử lý mục tiêu 12 ca/giờ.
+- Đặt SLA chờ xử lý tối đa 60 phút.
+- Bật yêu cầu ghi chú giải thích cho các quyết định và kiểm tra mẫu tối thiểu 10%.
+- Xây dựng ngưỡng phản ứng với hàng chờ: khi thời gian chờ vượt 30 phút cần cảnh báo và xem xét bổ sung nhân sự; khi đạt 60 phút cần thu hẹp phạm vi pilot hoặc chuyển sang xử lý thủ công.
+
+**2. Thiết lập cổng pháp lý (`legal`)**
+
+- Xác định dữ liệu cá nhân của người nhận hàng là thông tin không được tự ý chuyển cho bên vận chuyển.
+- Giới hạn payload `notify_carrier` trong 4 trường được phép: `order_id`, `parcel_id`, `district`, `delay_days`.
+- Chặn các trường thông tin cá nhân như `name`, `phone`, `street`, `address`, `email`, `national_id`, `customer_note` và `recipient_contact`.
+- Yêu cầu tắt hoặc chặn hành động `notify_carrier` khi phát hiện payload có thông tin cá nhân không được phép gửi; đồng thời ghi nhận sự cố để kiểm tra.
+- Yêu cầu có nguyên nhân và bằng chứng trước khi ghi nhận lỗi thuộc về hãng vận chuyển, tránh quy lỗi khi chưa đủ căn cứ.
+
+**3. Phân tích rủi ro và hoàn thiện checklist**
+
+- Đối chiếu dữ liệu sự cố, cấu hình và luồng xử lý để xác định nguy cơ thông tin người nhận bị đưa vào payload gửi hãng, kể cả khi người đặt hàng không nhập thông tin đó trong ticket.
+- Bổ sung các rủi ro về rò rỉ PII, quá tải hàng chờ và mất niềm tin của nhân viên vào risk register.
+- Hoàn thiện Phiếu C mục C11 bằng cách rà soát checklist go-live theo 9 nhóm: chất lượng, dữ liệu, bảo mật, quyền hạn, hiệu năng, chi phí, vận hành, con người/pháp lý và quyết định.
+- Đề xuất chỉ chuyển sang pilot khi các điều kiện vận hành, bảo mật và pháp lý đã được kiểm tra, có người chịu trách nhiệm và có phương án xử lý khi điều kiện dừng bị kích hoạt.
+
+**4. Tổng hợp bài nộp**
+
+- Tổng hợp họ tên, MSSV và vai trò của các thành viên theo bảng thông tin nhóm.
+- Chuẩn hóa danh sách `members` trong `submission/submission.json` theo định dạng `HoVaTen-MSSV`.
+- Cập nhật tên repo theo thông tin nhóm: `K5-L3B-DAY10-Sky-PoCtoPilotGate1`.
+- Kiểm tra tính thống nhất giữa thông tin thành viên trong README và file submission.
+
+### Bằng chứng
+
+- File cấu hình phụ trách: `config/operating_gates.json`.
+- Các nội dung cần đối chiếu: `data/world.json`, `lab10/guards.py`, `lab10/monitors.py`.
+- Tài liệu bàn giao: Phiếu B (B4–B5, B7.5–B7.6), Phiếu C (C11) và `submission/submission.json`.
+- Commit và mã lần chạy: sẽ cập nhật sau khi hoàn tất kiểm tra, chạy đánh giá và chốt vòng.
+
+### Exit ticket
+
+**Một điều học được:**
+
+Cổng vận hành và pháp lý không chỉ là các điều kiện kỹ thuật trong code. Mỗi điều kiện cần gắn với người chịu trách nhiệm, người có quyền phê duyệt, ngưỡng cảnh báo, kênh thông báo và quy trình dừng cụ thể. Đặc biệt, dữ liệu có sẵn trong hệ thống không đồng nghĩa với dữ liệu được phép chia sẻ cho bên thứ ba.
+
+**Một điều còn chưa chắc:**
+
+Ngưỡng bố trí 2 người trực với công suất 12 ca/giờ và tỷ lệ kiểm tra mẫu 10% hiện là phương án đề xuất. Cần đối chiếu với dữ liệu pilot thực tế về số lượng ticket, thời gian xử lý, tỷ lệ chuyển cấp và số trường hợp vi phạm để xác nhận các ngưỡng này có phù hợp hay không trước Bước đánh giá 2.
 
 ### Exit ticket
 
