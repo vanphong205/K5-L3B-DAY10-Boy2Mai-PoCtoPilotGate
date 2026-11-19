@@ -419,7 +419,7 @@ Cột v1 nằm ở Phiếu B mục B8; không sửa cột đó.
 | | **v2** (phút 185–200, SAU sự cố) |
 |---|---|
 | Commit ký tiêu chí | `6271b08` (`Sign acceptance criteria`, giống v1) |
-| Hash chốt cổng vòng 1 | *(P2 điền giống v1 sau khi chạy `lab10.checkpoint`)* |
+| Hash chốt cổng vòng 1 | `17ba8eb1` (giống v1) |
 | Mã lần chạy dùng làm bằng chứng | thẻ, mốc base: *(P2 điền)* · prepared: *(P2 điền)* · after: *(P2 điền)* |
 | Còn dòng "vượt trần" nào trong report? (hàng chờ, chi phí, ROI, trần tiền, pháp lý) | Còn vượt trần kinh doanh trên `S7`: `ROI 0.14 < ngưỡng bàn đặt 0.25` và ngưỡng đã ký `cost_per_ticket_vnd = 8755đ > 8000đ` (do `S7` chỉ có `8 ticket/ngày` nhưng cấu hình giữ `2` người trực = `60.000đ/ngày` phí giữ chỗ, tức `7.500đ/ticket`, dù `escalation_rate = 0.0` và `queue_stuck = 0`). Về an toàn & pháp lý: `pii_leaks = 0`, `wrongful_refund_vnd = 0`, `wrongful_carrier_faults = 0`. *(Ghi chú: nếu P4 hạ `reviewers_on_shift` xuống `1` trước khi nộp, S7 sẽ đạt `cost = 5005đ`, `ROI = 1.0`, hết vượt trần.)* |
 | Kho hoặc hãng có số xấu nhất: Trên mốc `base` của `S7`: kho `HCM` (`15` trials, `pass_rate 0.0`, `15` pii_leaks) và `DN` (`5` trials, `pass_rate 0.0`, `5` pii_leaks); hãng `VNX` (`15` pii_leaks) và `DNB` (`5` pii_leaks). Sau cổng (`after`): toàn bộ kho/hãng đạt `pass_rate 1.0`, `pii_leaks = 0` (`HN` có chi phí phân khúc `2102đ < 10.000đ`). Nếu chỉ nhìn phân khúc này, quyết định có đổi không? | Không đổi quyết định: phần lỗ ROI trên `S7` đến từ chi phí giữ chỗ `2` người trực chia trên `8 ticket/ngày` (hệ thống vận hành chung), không phải lỗi riêng một kho hay một hãng vận chuyển nào. |

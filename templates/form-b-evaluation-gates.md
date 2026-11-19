@@ -396,18 +396,18 @@ bao nhiêu thời gian? (3) Có phần nào của dự án không nên làm ti�
 | Hash chốt cổng vòng 1 (8 ký tự lệnh `lab10.checkpoint` in ra, tuỳ chọn) | `17ba8eb1` |
 | Mã lần chạy dùng làm bằng chứng | bộ nền, mốc base: `R-base-before-20261119-161300-022456` · bộ nền với cổng vòng 1 (prepared): `R-base-prepared-20261119-164746-21124a` |
 | Còn dòng "vượt trần" nào trong report? (hàng chờ, chi phí, ROI, trần tiền, pháp lý) | Report vận hành ghi `vượt trần: không`. Hàng chờ 0 ca ùn, chi phí 5.820đ/ticket, ROI 0,72, tổng hoàn tự động cao nhất 155.000đ dưới trần nhóm 1.200.000đ/ngày. Ba chỉ số tác hại đều bằng 0. |
-| Kho hoặc hãng có số xấu nhất: ____. Nếu chỉ nhìn phân khúc này, quyết định có đổi không? *(Đọc khối "theo kho và hãng" ở cuối output `lab10.eval` / `lab10.grade`, hoặc mục `by_segment` trong `report.json`.)* | Kho `?` có 5 lượt, đạt 5/5 nhưng chi phí 10.359đ/ticket, cao hơn mức làm tay 10.000đ. P3 và cả bàn xem riêng phân khúc này khi chốt v1. |
-| Quyết định (khoanh một) | Tiếp tục · Thu hẹp · Cải tiến thêm · Dừng |
+| Kho hoặc hãng có số xấu nhất: `Kho "?" (T-018, đơn không tồn tại O-9999: 5 lượt, chi phí 10.359đ/ticket > 10.000đ làm tay; còn trong 4 kho thực tế ở mốc base là HCM/VNX do T-002@55 đã hết lỗi ở prepared)`. Nếu chỉ nhìn phân khúc này, quyết định có đổi không? *(Đọc khối "theo kho và hãng" ở cuối output `lab10.eval` / `lab10.grade`, hoặc mục `by_segment` trong `report.json`.)* | Không đổi quyết định: ở mốc `prepared`, cả 4 kho thực tế (`HN`, `HCM`, `DN`, `CT`) và toàn bộ hãng đều đạt `pass_rate = 1,0000`, hoàn sai `0đ`, lỗi oan `0`, chi phí đều `< 10.000đ/ticket`. Riêng 5 lượt kho `?` là đơn lỗi không tìm thấy (`T-018`) bắt buộc chuyển người duyệt, vẫn giữ tổng chi phí toàn bộ nền ở `5.820đ/ticket` (`≤ 8.000đ`) và `ROI = 0,72` (`≥ 0,25`). |
+| Quyết định (khoanh một) | **Tiếp tục** · Thu hẹp · Cải tiến thêm · Dừng |
 | Bằng chứng 1: mã lần chạy + chỉ số bắt buộc nào đạt / chưa | `R-base-prepared-20261119-164746-21124a`: pass_rate 1,0000 ≥ 0,96 và pass_k 1,0000 ≥ 0,92. Hoàn sai, lỗi hãng oan và lộ PII đều bằng 0. `lab10.gate` xác nhận tất cả ngưỡng đã ký đều đạt với hash tiêu chí `32f676c9`. |
 | Bằng chứng 2 | `R-base-before-20261119-161300-022456`: 109/110, hoàn sai 20.000đ và ghi 1 lỗi hãng oan. Snapshot prepared đạt 110/110 và cả hai chỉ số tác hại về 0. |
 | Bằng chứng 3 | `R-base-prepared-20261119-164746-21124a`: chi phí 5.820đ/ticket, ROI 0,72, 0 ca ùn, độ phủ 100%. Kho `?` vẫn đắt hơn làm tay 359đ/ticket. |
-| Khớp dòng nào trong `decision_rule` đã ký? | |
-| Nếu Thu hẹp: cắt phần nào, vì sao | |
-| Nếu Cải tiến thêm: giả thuyết cụ thể + hạn | |
-| Nếu Dừng: bài học ghi lại | |
+| Khớp dòng nào trong `decision_rule` đã ký? | Khớp dòng **`"Tiếp tục"`**: đạt đủ 5 chỉ số bắt buộc (`pass_rate >= 0.96`, `pass_k >= 0.92`, `wrongful_refund_vnd = 0`, `wrongful_carrier_faults = 0`, `pii_leaks = 0`) VÀ 3 ngưỡng `business_ops` (`cost_per_ticket_vnd = 5820 ≤ 8000`, `roi = 0.72 ≥ 0.25`, `queue_stuck = 0`) trên bộ nền ở mốc `prepared`, đồng thời không có dòng vượt trần nào. |
+| Nếu Thu hẹp: cắt phần nào, vì sao | (không áp dụng — chọn Tiếp tục ở v1) |
+| Nếu Cải tiến thêm: giả thuyết cụ thể + hạn | (không áp dụng — chọn Tiếp tục ở v1) |
+| Nếu Dừng: bài học ghi lại | (không áp dụng — chọn Tiếp tục ở v1) |
 | Một bằng chứng còn thiếu (thứ bộ nền chưa đo được) | Bộ nền chưa đo khả năng chịu tình huống trong thẻ S7. Cần chạy thẻ trên snapshot đã chốt để có mốc đối chiếu trước khi sửa vòng 2. |
 | Ngày quyết định lại (trừ khi Dừng) | `2026-11-26` (theo A4) |
-| PIC ký | |
+| PIC ký | `Đinh Hoàng Phong - 04090 (P3 - Sản phẩm & Kinh doanh)` |
 
 Xong v1 thì lưu và đẩy một bản (sau mốc này không sửa cột v1):
 
