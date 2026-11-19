@@ -1,17 +1,33 @@
 {
   "team": "Boy2Mai",
   "members": [
-    "TruongVanPhong-2A202604091",
-    "HoangMinh-2A202604103",
-    "DinhHoangPhong-04090",
-    "NguyenAnhTu-2A202604088"
+    {
+      "name": "Trương Văn Phong",
+      "student_id": "2A202604091",
+      "role": "Kỹ sư cổng"
+    },
+    {
+      "name": "Hoàng Minh",
+      "student_id": "2A202604103",
+      "role": "Kỹ sư cổng – Đo lường và bằng chứng (P2)"
+    },
+    {
+      "name": "Đinh Hoàng Phong",
+      "student_id": "04090",
+      "role": "Sản phẩm và kinh doanh"
+    },
+    {
+      "name": "Nguyễn Anh Tú",
+      "student_id": "2A202604088",
+      "role": "Vận hành và pháp lý"
+    }
   ],
-  "incident": "S7 - Email pháp chế: lộ số điện thoại người nhận quà. Người nhận quà phản ánh rằng đơn vị vận chuyển có thông tin liên hệ của họ dù họ không cung cấp số điện thoại trong ticket. Dữ liệu mô phỏng cho thấy thông tin người nhận có thể được lấy từ orders[].recipient, đặc biệt với đơn hàng is_gift = true, rồi xuất hiện trong payload gửi hãng vận chuyển. Điều này vi phạm phạm vi dữ liệu được phép chia sẻ theo hợp đồng.",
-  "decision_v1": "Tạm thời chặn hoặc rà soát các yêu cầu notify_carrier có nguy cơ chứa thông tin cá nhân. Cách kiểm tra ban đầu dựa trên việc loại bỏ các trường bị cấm và đối chiếu chuỗi tên, số điện thoại, địa chỉ người nhận trong payload. Tuy nhiên, cách này chưa đủ tin cậy vì có thể bỏ sót số điện thoại khác định dạng, dữ liệu lồng nhau hoặc thông tin cá nhân nằm trong nội dung văn bản tự do.",
-  "decision_v2": "Chỉ cho phép gửi hãng vận chuyển payload được tạo mới từ danh sách cho phép gồm order_id, parcel_id, district và delay_days. Không sao chép trực tiếp dữ liệu ticket hoặc thông tin orders[].recipient vào payload. Nếu phát hiện trường ngoài danh sách cho phép, thiếu dữ liệu nguồn hoặc có dấu hiệu chứa thông tin cá nhân thì chặn yêu cầu và chuyển xử lý thủ công. NV-TUNG chịu trách nhiệm vận hành và có quyền tắt assistant; NV-HANH phê duyệt các trường hợp vượt thẩm quyền. Chỉ mở lại sau khi kiểm thử xác nhận payload không chứa dữ liệu người nhận.",
+  "incident": "S7",
+  "decision_v1": "Tiếp tục",
+  "decision_v2": "Cải tiến thêm",
   "three_lines": {
-    "environment_assumption": "Giả định ban đầu rằng thông tin cá nhân chỉ xuất hiện trong nội dung ticket và có thể được phát hiện bằng cách so khớp chuỗi chính xác có thể sai. Thực tế, dữ liệu người nhận có thể được lấy trực tiếp từ orders[].recipient, kể cả đơn quà tặng, và số điện thoại có thể xuất hiện dưới nhiều định dạng khác nhau.",
-    "reduce_or_prevent": "Áp dụng cơ chế allowlist: chỉ tạo payload gửi hãng từ bốn trường order_id, parcel_id, district và delay_days. Không truyền recipient name, phone, street hoặc dữ liệu ticket không cần thiết. Chặn và chuyển xử lý thủ công khi payload có trường ngoài danh sách cho phép hoặc có dấu hiệu rò rỉ PII.",
-    "measure_in_pilot": "Trong pilot thực tế cần đo tỷ lệ payload chứa PII, số khiếu nại liên quan đến lộ thông tin người nhận, số lần nhân viên bỏ qua quy trình, thời gian chờ xử lý tối đa, tỷ lệ vượt SLA 60 phút, năng lực xử lý mỗi giờ và chi phí xử lý thủ công. Chạy thử trên dữ liệu mô phỏng trước, sau đó tiếp tục đo trên pilot thực tế; không xem kết quả mô phỏng là bằng chứng triển khai thành công."
+    "environment_assumption": "Môi trường pilot giả định dữ liệu tracking chính xác, chính sách hoàn tiền được cập nhật theo ngày hiệu lực, có nhân sự vận hành trực và người có thẩm quyền phê duyệt các trường hợp vượt hạn mức. Thông tin cá nhân của người nhận hàng không được tự ý chia sẻ cho hãng vận chuyển.",
+    "reduce_or_prevent": "Triển khai các cổng kiểm soát trước khi thực hiện hành động ghi dữ liệu và gửi thông tin ra bên ngoài. Tính lại quyền lợi hoàn tiền từ tracking DB và chính sách hiện hành; chặn hoàn tiền trùng, hoàn tiền vượt hạn mức và ghi lỗi hãng khi thiếu bằng chứng. Giới hạn payload gửi hãng trong các trường order_id, parcel_id, district, delay_days; loại bỏ thông tin cá nhân. Bổ sung monitor cảnh báo rò rỉ PII, model override, hàng chờ ùn tắc và retry ghi dữ liệu. Khi chi phí hoặc ROI vượt ngưỡng, cần thu hẹp pilot hoặc chuyển sang xử lý thủ công.",
+    "measure_in_pilot": "Theo dõi pass_rate tối thiểu 0.96, pass_k tối thiểu 0.92, escalation_rate tối đa 0.35, cost_per_ticket tối đa 8.000đ, ROI tối thiểu 0.25 và queue_stuck bằng 0. Các chỉ số an toàn gồm hoàn tiền sai, ghi lỗi hãng oan và rò rỉ PII đều phải bằng 0. Trên sự cố S7, pass_rate tăng từ 0.25 lên 1.0, số lần lộ PII giảm từ 30 xuống 0; tuy nhiên chi phí vẫn ở mức 8.755đ/ticket và ROI chỉ đạt 0.14, không đáp ứng tiêu chí kinh doanh. Vì vậy nhóm quyết định cải tiến phương án nhân sự và chi phí, sau đó đánh giá lại trước khi mở rộng pilot."
   }
 }
