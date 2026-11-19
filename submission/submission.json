@@ -1,12 +1,17 @@
 {
-  "team": "",
-  "members": [],
-  "incident": "",
-  "decision_v1": "",
-  "decision_v2": "",
+  "team": "Boy2Mai",
+  "members": [
+    "TruongVanPhong-2A202604091",
+    "HoangMinh-2A202604103",
+    "DinhHoangPhong-04090",
+    "NguyenAnhTu-2A202604088"
+  ],
+  "incident": "S7 - Email pháp chế: lộ số điện thoại người nhận quà. Người nhận quà phản ánh rằng đơn vị vận chuyển có thông tin liên hệ của họ dù họ không cung cấp số điện thoại trong ticket. Dữ liệu mô phỏng cho thấy thông tin người nhận có thể được lấy từ orders[].recipient, đặc biệt với đơn hàng is_gift = true, rồi xuất hiện trong payload gửi hãng vận chuyển. Điều này vi phạm phạm vi dữ liệu được phép chia sẻ theo hợp đồng.",
+  "decision_v1": "Tạm thời chặn hoặc rà soát các yêu cầu notify_carrier có nguy cơ chứa thông tin cá nhân. Cách kiểm tra ban đầu dựa trên việc loại bỏ các trường bị cấm và đối chiếu chuỗi tên, số điện thoại, địa chỉ người nhận trong payload. Tuy nhiên, cách này chưa đủ tin cậy vì có thể bỏ sót số điện thoại khác định dạng, dữ liệu lồng nhau hoặc thông tin cá nhân nằm trong nội dung văn bản tự do.",
+  "decision_v2": "Chỉ cho phép gửi hãng vận chuyển payload được tạo mới từ danh sách cho phép gồm order_id, parcel_id, district và delay_days. Không sao chép trực tiếp dữ liệu ticket hoặc thông tin orders[].recipient vào payload. Nếu phát hiện trường ngoài danh sách cho phép, thiếu dữ liệu nguồn hoặc có dấu hiệu chứa thông tin cá nhân thì chặn yêu cầu và chuyển xử lý thủ công. NV-TUNG chịu trách nhiệm vận hành và có quyền tắt assistant; NV-HANH phê duyệt các trường hợp vượt thẩm quyền. Chỉ mở lại sau khi kiểm thử xác nhận payload không chứa dữ liệu người nhận.",
   "three_lines": {
-    "environment_assumption": "",
-    "reduce_or_prevent": "",
-    "measure_in_pilot": ""
+    "environment_assumption": "Giả định ban đầu rằng thông tin cá nhân chỉ xuất hiện trong nội dung ticket và có thể được phát hiện bằng cách so khớp chuỗi chính xác có thể sai. Thực tế, dữ liệu người nhận có thể được lấy trực tiếp từ orders[].recipient, kể cả đơn quà tặng, và số điện thoại có thể xuất hiện dưới nhiều định dạng khác nhau.",
+    "reduce_or_prevent": "Áp dụng cơ chế allowlist: chỉ tạo payload gửi hãng từ bốn trường order_id, parcel_id, district và delay_days. Không truyền recipient name, phone, street hoặc dữ liệu ticket không cần thiết. Chặn và chuyển xử lý thủ công khi payload có trường ngoài danh sách cho phép hoặc có dấu hiệu rò rỉ PII.",
+    "measure_in_pilot": "Trong pilot thực tế cần đo tỷ lệ payload chứa PII, số khiếu nại liên quan đến lộ thông tin người nhận, số lần nhân viên bỏ qua quy trình, thời gian chờ xử lý tối đa, tỷ lệ vượt SLA 60 phút, năng lực xử lý mỗi giờ và chi phí xử lý thủ công. Chạy thử trên dữ liệu mô phỏng trước, sau đó tiếp tục đo trên pilot thực tế; không xem kết quả mô phỏng là bằng chứng triển khai thành công."
   }
 }
