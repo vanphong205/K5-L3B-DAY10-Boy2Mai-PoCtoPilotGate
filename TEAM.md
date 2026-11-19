@@ -73,9 +73,9 @@ File: `config/acceptance_criteria.json`, `config/acceptance_criteria.lock`, mụ
 
 ### Bằng chứng
 
-- Mã commit: `85d10d1` (soạn tiêu chí & Phiếu A), `dd4ec02` (khôi phục câu 1.2), `6271b08` (`Sign acceptance criteria`), `42e5704` (cập nhật A5), cùng commit nhận thẻ `S7` và cập nhật `business` / Phiếu B / Phiếu C / `TEAM.md`.
+- Mã commit: `85d10d1` (soạn tiêu chí & Phiếu A), `dd4ec02` (khôi phục câu 1.2), `6271b08` (`Sign acceptance criteria`), `42e5704` (cập nhật A5), `b789192` (`Nhận thẻ S7`), `7c23e40` (điền `business` trong `operating_gates.json`, B3/B6/B7.4, C5/C7/C12, `TEAM.md`), cùng commit hoàn thiện `B8` (`v1`) và `C12` theo `checkpoint` (`17ba8eb1`).
 - Dữ liệu & phiếu: `config/acceptance_criteria.json`, `config/acceptance_criteria.lock`, `config/operating_gates.json`, `templates/form-a-criteria.md` (`A1`, `A3`, `A4`, `A5`), `templates/form-b-evaluation-gates.md` (`B3`, `B6`, `B7.4`, `B8`), `templates/form-c-incident.md` (`C5`, `C7`, `C12`).
-- Lưu ý bằng chứng chạy máy: phần đánh giá đã được kiểm tra logic trên bộ nền và `S7`; mã lần chạy (`runs/<mã>`) và `round1.lock` do P2 cập nhật vào B0/B8/C0/C12 sau khi chạy `eval`, `checkpoint`, `grade --incident S7`.
+- Bằng chứng lần chạy vòng 1: `R-base-before-20261119-161300-022456` (`base`), `R-base-after-20261119-164422-21124a` (`after`), `R-base-prepared-20261119-164746-21124a` (`prepared`, chốt `round1.lock` = `17ba8eb1`). Mã lần chạy thẻ `S7` (`base` · `prepared` · `after` sau `checkpoint`) do P2 gắn vào C0/C12 khi chạy `lab10.grade --incident S7`.
 
 ### Exit ticket
 
